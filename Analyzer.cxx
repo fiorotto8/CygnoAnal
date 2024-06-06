@@ -350,6 +350,8 @@ fLineDirection(nullptr)
       cout << "B and E indices appear to be valid." << endl;
   } */
 
+  ///////  Original version
+  /*
 	fminx = TMath::MinElement(E-B,&X[B]);
 	fmaxx = TMath::MaxElement(E-B,&X[B]);
 	fminy = TMath::MinElement(E-B,&Y[B]);
@@ -372,6 +374,32 @@ fLineDirection(nullptr)
     fintegral+=Z[i];
     }
 	}
+  */
+
+  ///////   David's version, careful with rotations
+
+	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
+	fminx = 2305 - TMath::MaxElement(E-B,&X[B]);
+	fmaxy = 2305 - TMath::MinElement(E-B,&Y[B]);
+	fminy = 2305 - TMath::MaxElement(E-B,&Y[B]);
+
+  fmaxx=fmaxx+30;
+	fminx=fminx-30;
+	fmaxy=fmaxy+30;
+	fminy=fminy-30;
+
+  fnpixelx=fmaxx-fminx;
+	fnpixely=fmaxy-fminy;
+
+  fTrack=new TH2F(Form("%s",nometh2),Form("%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
+
+	for(int i=B;i<E;i++){
+    if (Z[i]>0) {
+      fTrack->SetBinContent(fTrack->GetXaxis()->FindBin( 2305 - X[i]),fTrack->GetYaxis()->FindBin( 2305 - Y[i]),Z[i]); // cahnge david (rotation)
+      fintegral+=Z[i];
+    }
+	}
+
 
 	//fTrack->Rebin2D(2,2);
 	fPhiMainAxis=AngleLineMaxRMS();
