@@ -941,8 +941,35 @@ void Analyzer::ImpactPoint(const char* nometh2){
   std::vector<float> XIntPointPrev;
   std::vector<float> YIntPointPrev;
 
+// Original version
+  // do{
+  //   rminN+=0.03;
+  //   NSelPoints=0;
+
+  // Updated version for speed
   do{
-    rminN+=0.03;
+
+    //v1
+    if(NSelPoints>3000){
+      rminN+=9.0;
+    } else {
+      rminN+=2.0;
+    }
+
+    //v2
+    // if(NSelPoints>800){
+    //   rminN+=9.0;
+    // } else {
+    //   rminN+=3.0;
+    // }
+
+    //v3
+    // if(NSelPoints>4000){
+    //   rminN+=2.0;
+    // } else {
+    //   rminN+=0.5;
+    // }
+
     NSelPoints=0;
 
     fTrackTail->Reset();
@@ -950,18 +977,17 @@ void Analyzer::ImpactPoint(const char* nometh2){
     for(int j=0;j<fTrack->GetXaxis()->GetNbins();j++){
       for(int l=0;l<fTrack->GetYaxis()->GetNbins();l++){
 
-	X=fTrack->GetXaxis()->GetBinCenter(j);
-	Y=fTrack->GetYaxis()->GetBinCenter(l);
-	Z=fTrack->GetBinContent(j,l);
+        X=fTrack->GetXaxis()->GetBinCenter(j);
+        Y=fTrack->GetYaxis()->GetBinCenter(l);
+        Z=fTrack->GetBinContent(j,l);
 
-	PointSkew=GetPointSkew(X,Y);
-	PointDistCm=PDistCm(X,Y);
+        PointSkew=GetPointSkew(X,Y);
+        PointDistCm=PDistCm(X,Y);
 
-	if(PointSkew>0 && PointDistCm> rminN && Z>0){
-    fTrackTail->SetBinContent(fTrackTail->GetXaxis()->FindBin(X),fTrackTail->GetYaxis()->FindBin(Y),Z);
-    NSelPoints++;
-	}//chiudo if selection
-
+        if(PointSkew>0 && PointDistCm> rminN && Z>0){
+          fTrackTail->SetBinContent(fTrackTail->GetXaxis()->FindBin(X),fTrackTail->GetYaxis()->FindBin(Y),Z);
+          NSelPoints++;
+        }//chiudo if selection
       }//chiuso for l
     }//chiudo for j (fill histos)
 
