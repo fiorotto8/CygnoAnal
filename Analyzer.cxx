@@ -27,6 +27,7 @@
 #include <TSpectrum.h>
 #include <TMatrixD.h>
 #include "TDecompSVD.h"
+#include "TLatex.h"
 
 using namespace std;
 
