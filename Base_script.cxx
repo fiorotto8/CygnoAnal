@@ -195,9 +195,15 @@ int main(int argc, char** argv){
   double xl=0, yl=0, xr=0, yr=0;
   double reco_theta=0, x_mean=0, y_mean=0, x_min=0, x_max=0, y_min=0, y_max=0;
 
-  //impact point and directionality
+  //// Impact point and directionality variables
+  // Original for ERs (Samule)
   Int_t NPIP=80;
   Float_t wFac=2.5;
+
+  // For alphas (David)
+  // Int_t NPIP=2000;
+  // Float_t wFac=3.5;
+
   double xIP=0, yIP=0;
 
   vector<std::pair<double,double>> peakslong;
