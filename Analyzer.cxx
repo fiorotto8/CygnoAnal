@@ -352,7 +352,7 @@ fLineDirection(nullptr)
   } */
 
   ///////  Original version
-  // /*
+  /*
 	fminx = TMath::MinElement(E-B,&X[B]);
 	fmaxx = TMath::MaxElement(E-B,&X[B]);
 	fminy = TMath::MinElement(E-B,&Y[B]);
@@ -375,8 +375,8 @@ fLineDirection(nullptr)
     fintegral+=Z[i];
     }
 	}
-  // */
-  /*
+  */
+  // /*
   ///////   David's version, careful with rotations
 
 	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
@@ -400,7 +400,7 @@ fLineDirection(nullptr)
       fintegral+=Z[i];
     }
 	}
- */
+//  */
 
 	//fTrack->Rebin2D(2,2);
 	fPhiMainAxis=AngleLineMaxRMS();
