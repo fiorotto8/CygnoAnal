@@ -495,6 +495,24 @@ void Analyzer::SavetoFile(const char* nometh2)
 }
 
 /**
+ * Plots and saves the current canvas of the Track in COLZ to a ROOT file.
+ *
+ * @param nometh2 The name for the histogram in the file.
+ */
+void Analyzer::PlotandSavetoFileCOLZ(const char* nometh2)
+{
+  TCanvas* canv = new TCanvas("canv","canv",1500,1500);
+
+  fTrack->Draw("COLZ");
+  canv->SetName(nometh2);
+  canv->Write();
+  canv->DrawClone();
+  delete canv;
+
+  return;
+}
+
+/**
  * Generates and saves a pictorial representation of the current histogram.
  *
  * @param nomepic The filename for the saved picture.
