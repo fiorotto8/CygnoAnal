@@ -866,7 +866,7 @@ double Analyzer::SkewOnMainAxis(){
  * Applies a simple noise removal algorithm to the track histogram by removing isolated hits.
  * Hits are considered isolated if they have no neighboring hits within a one-bin radius.
  */
-void Analyzer::RemoveNoise(){
+void Analyzer::RemoveNoise(double a){
   std::vector<Int_t> ToRemoveXBin;
   std::vector<Int_t> ToRemoveYBin;
 
@@ -875,16 +875,16 @@ void Analyzer::RemoveNoise(){
   for(int i=1; i<fnpixelx-1;i++){
     for(int j=1;j<fnpixely-1;j++){
       if(fTrack->GetBinContent(i,j)>0){
-	ETemp=0;
-	if(fTrack->GetBinContent(i+1,j)>=0) ETemp+=fTrack->GetBinContent(i+1,j);
-	if(fTrack->GetBinContent(i-1,j)>=0) ETemp+=fTrack->GetBinContent(i-1,j);
-	if(fTrack->GetBinContent(i,j+1)>=0) ETemp+=fTrack->GetBinContent(i,j+1);
-	if(fTrack->GetBinContent(i,j-1)>=0) ETemp+=fTrack->GetBinContent(i,j-1);
-	//std::cout <<"EAround  "<< ETemp << std::endl;
-	if(ETemp<=0){
-    ToRemoveXBin.push_back(i);
-    ToRemoveYBin.push_back(j);
-	}//chiudo for E
+	      ETemp=0;
+	      if(fTrack->GetBinContent(i+1,j)>=0) ETemp+=fTrack->GetBinContent(i+1,j);
+        if(fTrack->GetBinContent(i-1,j)>=0) ETemp+=fTrack->GetBinContent(i-1,j);
+        if(fTrack->GetBinContent(i,j+1)>=0) ETemp+=fTrack->GetBinContent(i,j+1);
+        if(fTrack->GetBinContent(i,j-1)>=0) ETemp+=fTrack->GetBinContent(i,j-1);
+        //std::cout <<"EAround  "<< ETemp << std::endl;
+        if(ETemp<=a){
+          ToRemoveXBin.push_back(i);
+          ToRemoveYBin.push_back(j);
+        }//chiudo for E
       }//Chiudo if Z>0
     }//chiudo for j
   }//chiudo for j
