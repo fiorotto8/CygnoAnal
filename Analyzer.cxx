@@ -583,6 +583,75 @@ void Analyzer::SavePicDir(const char* nomepic){
 }
 
 /**
+ * Plots and saves a representation of the directionality process.
+ *
+ * @param nomepic The filename for the saved picture.
+ */
+void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
+
+  TCanvas* canv = new TCanvas("canv","canv",800,800);
+  canv->Divide(2,2);
+
+  TLegend* l = new TLegend();
+  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180));
+
+  TLegend* l2 = new TLegend();
+  l2->AddEntry((TObject*)0,Form("NPx=%i",fnpixelx*fnpixely)); 	//assuming the track is a rectangle... doubtful
+  l2->AddEntry((TObject*)0,Form("Int=%f",fintegral));
+  l2->AddEntry((TObject*)0,Form("Dens=%f",fintegral/(fnpixelx*fnpixely)));
+  l2->AddEntry((TObject*)0,Form("Skew=%f",fSkewOnLine));
+  l2->AddEntry((TObject*)0,Form("SkewNorm=%f",fSkewOnLine/fintegral));
+
+  l2->AddEntry((TObject*)0,Form("RMS=%f",fRMSOnMainAxis));
+  l2->AddEntry((TObject*)0,Form("RMSNorm=%f",fRMSOnMainAxis/fintegral));
+
+  canv->cd(1);
+  fTrack->Draw("COLZ");
+  fBarPlot->Draw("SAMEP");
+  fLineMaxRMS->Draw("SAME");
+  l2->Draw("SAME");
+
+  // Have do to this workaround to name the first pad with a different name.
+  TPad *padtitle = new TPad("padtitle", "padtitle",0.2,0.90,0.8,0.99);
+  padtitle->Draw("SAME");
+  padtitle->cd();
+  // padtitle->SetFillStyle(1);
+  padtitle->SetFillColor(kWhite);
+  auto tex = new TLatex(0.5,0.5,"Original");
+  tex->SetTextAlign(22);
+  tex->SetTextSize(0.5);
+  tex->Draw();
+
+  canv->cd(2);
+  fTrackTail->SetTitle("Track tail + IP");
+  fTrackTail->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+
+  canv->cd(3);
+  fScaledTrack->SetTitle("Impact Point");
+  fScaledTrack->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+  fLineDirection->Draw("SAME");
+  canv->cd(3)->SetLogz();
+  l->Draw("SAME");
+
+  canv->cd(4);
+  fTrack->SetTitle("Final Directionality Angle");
+  fTrack->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+  fLineDirection->SetLineColor(kBlack);
+  fLineDirection->SetLineWidth(2);
+  fLineDirection->SetLineStyle(9);
+  fLineDirection->Draw("SAME");
+
+  // canv->SaveAs(Form("Tracks/%s.png",nomepic));
+  canv->SetName(nomepic);
+  canv->Write();
+  canv->DrawClone();
+  delete canv;
+}
+
+/**
  * Saves the current state to a ROOT file.
  *
  * @param nomefile The filename for the saved ROOT file.

@@ -106,6 +106,9 @@ public:
     void SavePicDir(const char* nomepic);
     void SaveRootFile(const char* nomefile);
 
+    void PlotandSavetoFileCOLZ(const char* nometh2);
+    void PlotandSavetoFileDirectionalFull(const char* nomepic);
+
     void Barycenter();
     void Barycenter(TH2F* Tr,double *X, double *Y);
     double AngleLineMaxRMS();
