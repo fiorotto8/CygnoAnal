@@ -313,6 +313,7 @@ int main(int argc, char** argv){
       //if ( ((((recolength-x0)*(recolength-x0))/xlen)+(((scint/recolength-ex0)*(scint/recolength-ex0))/exlen)>1)      )
       //if(x_mean<1600 && x_mean>200 && scint<1000000 &&scint>1000 &&recolength>600 &&k!=14&&k!=27)//for ArCF4 80-20
       if(y_max>1600 && y_max<2000 &&scint>0 && recowidth/recolength<0.4)//for HeCF4 60-40 Fusion
+      // if ( scint/sc_npix > 25 && recolength > 100 && recowidth > 50 ) {   //Alpha cut from Giorgio
       {
         Analyzer Traccia(Form("Track%i_event%i_run%i",counter,k,run),XPix.data(),YPix.data(),ZPix.data(),BeginScPix[i],EndScPix[i]);
         //Traccia.SavePic(Form("Track%i_event%i_%i.png",counter,event,run));
