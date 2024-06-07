@@ -27,6 +27,7 @@
 #include <TSpectrum.h>
 #include <TMatrixD.h>
 #include "TDecompSVD.h"
+#include "TLatex.h"
 
 using namespace std;
 
@@ -350,6 +351,8 @@ fLineDirection(nullptr)
       cout << "B and E indices appear to be valid." << endl;
   } */
 
+  ///////  Original version
+  // /*
 	fminx = TMath::MinElement(E-B,&X[B]);
 	fmaxx = TMath::MaxElement(E-B,&X[B]);
 	fminy = TMath::MinElement(E-B,&Y[B]);
@@ -372,6 +375,32 @@ fLineDirection(nullptr)
     fintegral+=Z[i];
     }
 	}
+  // */
+  /*
+  ///////   David's version, careful with rotations
+
+	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
+	fminx = 2305 - TMath::MaxElement(E-B,&X[B]);
+	fmaxy = 2305 - TMath::MinElement(E-B,&Y[B]);
+	fminy = 2305 - TMath::MaxElement(E-B,&Y[B]);
+
+  fmaxx=fmaxx+30;
+	fminx=fminx-30;
+	fmaxy=fmaxy+30;
+	fminy=fminy-30;
+
+  fnpixelx=fmaxx-fminx;
+	fnpixely=fmaxy-fminy;
+
+  fTrack=new TH2F(Form("%s",nometh2),Form("%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
+
+	for(int i=B;i<E;i++){
+    if (Z[i]>0) {
+      fTrack->SetBinContent(fTrack->GetXaxis()->FindBin( 2305 - X[i]),fTrack->GetYaxis()->FindBin( 2305 - Y[i]),Z[i]); // cahnge david (rotation)
+      fintegral+=Z[i];
+    }
+	}
+ */
 
 	//fTrack->Rebin2D(2,2);
 	fPhiMainAxis=AngleLineMaxRMS();
@@ -495,6 +524,24 @@ void Analyzer::SavetoFile(const char* nometh2)
 }
 
 /**
+ * Plots and saves the current canvas of the Track in COLZ to a ROOT file.
+ *
+ * @param nometh2 The name for the histogram in the file.
+ */
+void Analyzer::PlotandSavetoFileCOLZ(const char* nometh2)
+{
+  TCanvas* canv = new TCanvas("canv","canv",1500,1500);
+
+  fTrack->Draw("COLZ");
+  canv->SetName(nometh2);
+  canv->Write();
+  canv->DrawClone();
+  delete canv;
+
+  return;
+}
+
+/**
  * Generates and saves a pictorial representation of the current histogram.
  *
  * @param nomepic The filename for the saved picture.
@@ -561,6 +608,75 @@ void Analyzer::SavePicDir(const char* nomepic){
 
   canv->SaveAs(Form("Tracks/%s",nomepic));
 
+  delete canv;
+}
+
+/**
+ * Plots and saves a representation of the directionality process.
+ *
+ * @param nomepic The filename for the saved picture.
+ */
+void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
+
+  TCanvas* canv = new TCanvas("canv","canv",800,800);
+  canv->Divide(2,2);
+
+  TLegend* l = new TLegend();
+  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180));
+
+  TLegend* l2 = new TLegend();
+  l2->AddEntry((TObject*)0,Form("NPx=%i",fnpixelx*fnpixely)); 	//assuming the track is a rectangle... doubtful
+  l2->AddEntry((TObject*)0,Form("Int=%f",fintegral));
+  l2->AddEntry((TObject*)0,Form("Dens=%f",fintegral/(fnpixelx*fnpixely)));
+  l2->AddEntry((TObject*)0,Form("Skew=%f",fSkewOnLine));
+  l2->AddEntry((TObject*)0,Form("SkewNorm=%f",fSkewOnLine/fintegral));
+
+  l2->AddEntry((TObject*)0,Form("RMS=%f",fRMSOnMainAxis));
+  l2->AddEntry((TObject*)0,Form("RMSNorm=%f",fRMSOnMainAxis/fintegral));
+
+  canv->cd(1);
+  fTrack->Draw("COLZ");
+  fBarPlot->Draw("SAMEP");
+  fLineMaxRMS->Draw("SAME");
+  l2->Draw("SAME");
+
+  // Have do to this workaround to name the first pad with a different name.
+  TPad *padtitle = new TPad("padtitle", "padtitle",0.2,0.90,0.8,0.99);
+  padtitle->Draw("SAME");
+  padtitle->cd();
+  // padtitle->SetFillStyle(1);
+  padtitle->SetFillColor(kWhite);
+  auto tex = new TLatex(0.5,0.5,"Original");
+  tex->SetTextAlign(22);
+  tex->SetTextSize(0.5);
+  tex->Draw();
+
+  canv->cd(2);
+  fTrackTail->SetTitle("Track tail + IP");
+  fTrackTail->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+
+  canv->cd(3);
+  fScaledTrack->SetTitle("Impact Point");
+  fScaledTrack->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+  fLineDirection->Draw("SAME");
+  canv->cd(3)->SetLogz();
+  l->Draw("SAME");
+
+  canv->cd(4);
+  fTrack->SetTitle("Final Directionality Angle");
+  fTrack->Draw("COLZ");
+  fIPPlot->Draw("SAMEP");
+  fLineDirection->SetLineColor(kBlack);
+  fLineDirection->SetLineWidth(2);
+  fLineDirection->SetLineStyle(9);
+  fLineDirection->Draw("SAME");
+
+  // canv->SaveAs(Form("Tracks/%s.png",nomepic));
+  canv->SetName(nomepic);
+  canv->Write();
+  canv->DrawClone();
   delete canv;
 }
 
@@ -779,7 +895,7 @@ double Analyzer::SkewOnMainAxis(){
  * Applies a simple noise removal algorithm to the track histogram by removing isolated hits.
  * Hits are considered isolated if they have no neighboring hits within a one-bin radius.
  */
-void Analyzer::RemoveNoise(){
+void Analyzer::RemoveNoise(double a){
   std::vector<Int_t> ToRemoveXBin;
   std::vector<Int_t> ToRemoveYBin;
 
@@ -788,16 +904,16 @@ void Analyzer::RemoveNoise(){
   for(int i=1; i<fnpixelx-1;i++){
     for(int j=1;j<fnpixely-1;j++){
       if(fTrack->GetBinContent(i,j)>0){
-	ETemp=0;
-	if(fTrack->GetBinContent(i+1,j)>=0) ETemp+=fTrack->GetBinContent(i+1,j);
-	if(fTrack->GetBinContent(i-1,j)>=0) ETemp+=fTrack->GetBinContent(i-1,j);
-	if(fTrack->GetBinContent(i,j+1)>=0) ETemp+=fTrack->GetBinContent(i,j+1);
-	if(fTrack->GetBinContent(i,j-1)>=0) ETemp+=fTrack->GetBinContent(i,j-1);
-	//std::cout <<"EAround  "<< ETemp << std::endl;
-	if(ETemp<=0){
-    ToRemoveXBin.push_back(i);
-    ToRemoveYBin.push_back(j);
-	}//chiudo for E
+	      ETemp=0;
+	      if(fTrack->GetBinContent(i+1,j)>=0) ETemp+=fTrack->GetBinContent(i+1,j);
+        if(fTrack->GetBinContent(i-1,j)>=0) ETemp+=fTrack->GetBinContent(i-1,j);
+        if(fTrack->GetBinContent(i,j+1)>=0) ETemp+=fTrack->GetBinContent(i,j+1);
+        if(fTrack->GetBinContent(i,j-1)>=0) ETemp+=fTrack->GetBinContent(i,j-1);
+        //std::cout <<"EAround  "<< ETemp << std::endl;
+        if(ETemp<=a){
+          ToRemoveXBin.push_back(i);
+          ToRemoveYBin.push_back(j);
+        }//chiudo for E
       }//Chiudo if Z>0
     }//chiudo for j
   }//chiudo for j
@@ -854,8 +970,35 @@ void Analyzer::ImpactPoint(const char* nometh2){
   std::vector<float> XIntPointPrev;
   std::vector<float> YIntPointPrev;
 
+// Original version
+  // do{
+  //   rminN+=0.03;
+  //   NSelPoints=0;
+
+  // Updated version for speed
   do{
-    rminN+=0.03;
+
+    //v1
+    if(NSelPoints>3000){
+      rminN+=9.0;
+    } else {
+      rminN+=2.0;
+    }
+
+    //v2
+    // if(NSelPoints>800){
+    //   rminN+=9.0;
+    // } else {
+    //   rminN+=3.0;
+    // }
+
+    //v3
+    // if(NSelPoints>4000){
+    //   rminN+=2.0;
+    // } else {
+    //   rminN+=0.5;
+    // }
+
     NSelPoints=0;
 
     fTrackTail->Reset();
@@ -863,18 +1006,17 @@ void Analyzer::ImpactPoint(const char* nometh2){
     for(int j=0;j<fTrack->GetXaxis()->GetNbins();j++){
       for(int l=0;l<fTrack->GetYaxis()->GetNbins();l++){
 
-	X=fTrack->GetXaxis()->GetBinCenter(j);
-	Y=fTrack->GetYaxis()->GetBinCenter(l);
-	Z=fTrack->GetBinContent(j,l);
+        X=fTrack->GetXaxis()->GetBinCenter(j);
+        Y=fTrack->GetYaxis()->GetBinCenter(l);
+        Z=fTrack->GetBinContent(j,l);
 
-	PointSkew=GetPointSkew(X,Y);
-	PointDistCm=PDistCm(X,Y);
+        PointSkew=GetPointSkew(X,Y);
+        PointDistCm=PDistCm(X,Y);
 
-	if(PointSkew>0 && PointDistCm> rminN && Z>0){
-    fTrackTail->SetBinContent(fTrackTail->GetXaxis()->FindBin(X),fTrackTail->GetYaxis()->FindBin(Y),Z);
-    NSelPoints++;
-	}//chiudo if selection
-
+        if(PointSkew>0 && PointDistCm> rminN && Z>0){
+          fTrackTail->SetBinContent(fTrackTail->GetXaxis()->FindBin(X),fTrackTail->GetYaxis()->FindBin(Y),Z);
+          NSelPoints++;
+        }//chiudo if selection
       }//chiuso for l
     }//chiudo for j (fill histos)
 

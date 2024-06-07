@@ -106,12 +106,15 @@ public:
     void SavePicDir(const char* nomepic);
     void SaveRootFile(const char* nomefile);
 
+    void PlotandSavetoFileCOLZ(const char* nometh2);
+    void PlotandSavetoFileDirectionalFull(const char* nomepic);
+
     void Barycenter();
     void Barycenter(TH2F* Tr,double *X, double *Y);
     double AngleLineMaxRMS();
     double RMSOnLine(double Phi);
     double SkewOnMainAxis();
-    void RemoveNoise();
+    void RemoveNoise(double a=0);
     void ApplyThr();
     void ImpactPoint(const char* nometh2);
     void ScaledTrack(const char* nometh2);
