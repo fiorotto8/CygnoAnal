@@ -7,3 +7,7 @@ Tracks/
 *.out
 *gif
 distributions/
+Reco/
+INAF_dir.cxx
+testAlpha
+AlphaDiffusion_testing.cxx
