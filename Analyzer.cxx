@@ -28,6 +28,7 @@
 #include <TMatrixD.h>
 #include "TDecompSVD.h"
 #include "TLatex.h"
+#include "TLine.h"
 
 using namespace std;
 
@@ -48,6 +49,7 @@ double RMSOnLine(double XBar, double YBar, double Phi);
  */
 Analyzer::Analyzer():
 // Initialization list for setting default values
+fRange(0.),
 fminx(0.),
 fminy(0.),
 fmaxx(0.),
@@ -89,6 +91,7 @@ fLineDirection(nullptr)
  */
 Analyzer::Analyzer(const Analyzer& source):
 // Initialization list for deep copying member variables
+fRange(0.),
 fminx(source.fminx),
 fminy(source.fminy),
 fmaxx(source.fmaxx),
@@ -141,6 +144,7 @@ fPhiDir(source.fPhiDir)
  */
 Analyzer::Analyzer(const char* nometh2, int npixel, TH2F *Tracklarge, int npixelorig):
 // Initialization list and constructor logic
+fRange(0.),
 fintegral(0.),
 fradius(0.),
 fheight(0.),
@@ -225,6 +229,7 @@ fLineDirection(nullptr)
  */
 Analyzer::Analyzer(const char* nometh2, TH2F *Tracklarge):
 // Initialization list and constructor logic
+fRange(0.),
 fradius(0.),
 fheight(0.),
 fxcentr(0),
@@ -314,6 +319,7 @@ fLineDirection(nullptr)
  */
 Analyzer::Analyzer(const char* nometh2, int* X, int* Y, float* Z, int B, int E):
 // Initialization list and constructor logicfradius(0.),
+fRange(0.),
 fheight(0.),
 fxcentr(0),
 fycentr(0),
@@ -426,6 +432,60 @@ Analyzer::~Analyzer()
 
 
 // Implementation of Other Member Functions
+
+/**
+ * Get the sigma of the track along the main axis in a range (Xbar, Ybar) - (-range, +range)
+ * @return The calculated sigma (spread) along the main axis.
+ */
+double Analyzer::GetSigmaAroundBar() {
+    double spread = 0;
+    double totalWeight = 0;
+    double sumDistances = 0;
+    double sumDistancesSquared = 0;
+
+    double cosPhi = cos(fPhiMainAxis);
+    double sinPhi = sin(fPhiMainAxis);
+    double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
+    double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
+
+    // Calculate the coordinates for the perpendicular lines
+    double x1 = fXbar - fRange * cosPhi;
+    double y1 = fYbar - fRange * sinPhi;
+    double x2 = fXbar + fRange * cosPhi;
+    double y2 = fYbar + fRange * sinPhi;
+
+    for (int i = 1; i <= fnpixelx; ++i) {
+        for (int j = 1; j <= fnpixely; ++j) {
+            double binContent = fTrack->GetBinContent(i, j);
+            if (binContent > 0) {
+                double x = fTrack->GetXaxis()->GetBinCenter(i);
+                double y = fTrack->GetYaxis()->GetBinCenter(j);
+
+                // Project the distance onto the perpendicular line
+                double distance1 = (x - x1) * cosPerpPhi + (y - y1) * sinPerpPhi;
+                double distance2 = (x - x2) * cosPerpPhi + (y - y2) * sinPerpPhi;
+
+                // Choose the projection that falls within the range
+                double distance = (fabs(distance1) <= fRange) ? distance1 : distance2;
+
+                // Accumulate the weighted sums if within range
+                if (fabs(distance) <= fRange) {
+                    sumDistances += distance * binContent;
+                    sumDistancesSquared += distance * distance * binContent;
+                    totalWeight += binContent;
+                }
+            }
+        }
+    }
+
+    if (totalWeight > 0) {
+        double meanDistance = sumDistances / totalWeight;
+        double meanDistanceSquared = sumDistancesSquared / totalWeight;
+        spread = sqrt(meanDistanceSquared - meanDistance * meanDistance);
+    }
+
+    return spread;
+}
 
 /**
  * Initializes fLineMaxRMS based on current state.
@@ -575,6 +635,59 @@ void Analyzer::SavePic(const char* nomepic)
   delete canv;
 
   return;
+}
+
+/**
+ * Saves a pictorial representation showing the directionality of the track, with lines indicating a specified range.
+ *
+ * @param nomepic The filename for the saved picture.
+ */
+void Analyzer::SavePicDirWithRange(const char* nomepic) {
+    TCanvas* canv = new TCanvas("canv", "canv", 1500, 1500); // Adjusted canvas size to 1500x1500
+
+    TLegend* l = new TLegend();
+    l->AddEntry((TObject*)0, Form("%f", fPhiDir / TMath::Pi() * 180));
+
+    fTrack->Draw("COLZ");
+    fBarPlot->Draw("SAMEP");
+    fLineMaxRMS->Draw("SAME");
+
+    // Calculate the coordinates for the range lines
+    double cosPhi = cos(fPhiMainAxis);
+    double sinPhi = sin(fPhiMainAxis);
+    double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
+    double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
+    
+    double x1 = fXbar - fRange * cosPhi;
+    double y1 = fYbar - fRange * sinPhi;
+    double x2 = fXbar + fRange * cosPhi;
+    double y2 = fYbar + fRange * sinPhi;
+
+    // Extend the lines to cover the visible range of the canvas
+    double xMin = fTrack->GetXaxis()->GetXmin();
+    double xMax = fTrack->GetXaxis()->GetXmax();
+    double yMin = fTrack->GetYaxis()->GetXmin();
+    double yMax = fTrack->GetYaxis()->GetXmax();
+
+    TLine* line1 = new TLine(x1 + (xMin - fXbar) * cosPerpPhi, y1 + (yMin - fYbar) * sinPerpPhi,
+                             x1 + (xMax - fXbar) * cosPerpPhi, y1 + (yMax - fYbar) * sinPerpPhi);
+    line1->SetLineColor(kRed);
+    line1->SetLineStyle(2);
+    line1->Draw("SAME");
+
+    TLine* line2 = new TLine(x2 + (xMin - fXbar) * cosPerpPhi, y2 + (yMin - fYbar) * sinPerpPhi,
+                             x2 + (xMax - fXbar) * cosPerpPhi, y2 + (yMax - fYbar) * sinPerpPhi);
+    line2->SetLineColor(kRed);
+    line2->SetLineStyle(2);
+    line2->Draw("SAME");
+
+    l->Draw("SAME");
+
+    canv->SaveAs(Form("Tracks/%s", nomepic));
+
+    delete canv;
+    delete line1;
+    delete line2;
 }
 
 /**
