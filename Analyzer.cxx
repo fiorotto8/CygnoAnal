@@ -1005,45 +1005,44 @@ double Analyzer::SkewOnMainAxis(){
 }
 
 /**
- * Applies a simple noise removal algorithm to the track histogram by removing isolated hits.
- * Hits are considered isolated if they have no neighboring hits within a one-bin radius.
+ * Removes isolated noise hits from the track histogram.
+ * A hit is considered isolated and is removed if it has no neighboring hits within a one-bin radius.
+ *
+ * @param a The threshold for neighboring hit energy sum. Hits with neighboring energy sum less than or equal to 'a' are removed.
  */
-void Analyzer::RemoveNoise(double a){
+void Analyzer::RemoveNoise(double EnSum){
   std::vector<Int_t> ToRemoveXBin;
   std::vector<Int_t> ToRemoveYBin;
 
   Float_t ETemp;
 
-  for(int i=1; i<fnpixelx-1;i++){
-    for(int j=1;j<fnpixely-1;j++){
-      if(fTrack->GetBinContent(i,j)>0){
-	      ETemp=0;
-	      if(fTrack->GetBinContent(i+1,j)>=0) ETemp+=fTrack->GetBinContent(i+1,j);
-        if(fTrack->GetBinContent(i-1,j)>=0) ETemp+=fTrack->GetBinContent(i-1,j);
-        if(fTrack->GetBinContent(i,j+1)>=0) ETemp+=fTrack->GetBinContent(i,j+1);
-        if(fTrack->GetBinContent(i,j-1)>=0) ETemp+=fTrack->GetBinContent(i,j-1);
-        //std::cout <<"EAround  "<< ETemp << std::endl;
-        if(ETemp<=a){
+  for(int i = 1; i < fnpixelx - 1; i++){
+    for(int j = 1; j < fnpixely - 1; j++){
+      if(fTrack->GetBinContent(i, j) > 0){
+        ETemp = 0;
+        if(fTrack->GetBinContent(i + 1, j) >= 0) ETemp += fTrack->GetBinContent(i + 1, j);
+        if(fTrack->GetBinContent(i - 1, j) >= 0) ETemp += fTrack->GetBinContent(i - 1, j);
+        if(fTrack->GetBinContent(i, j + 1) >= 0) ETemp += fTrack->GetBinContent(i, j + 1);
+        if(fTrack->GetBinContent(i, j - 1) >= 0) ETemp += fTrack->GetBinContent(i, j - 1);
+
+        if(ETemp <= EnSum){
           ToRemoveXBin.push_back(i);
           ToRemoveYBin.push_back(j);
-        }//chiudo for E
-      }//Chiudo if Z>0
-    }//chiudo for j
-  }//chiudo for j
-
-  // std::cout << ToRemoveXBin.size() << std::endl;
-  //std::cout << ToRemoveXBin.size()<< std::endl;
-  for(int i=0; i<ToRemoveXBin.size(); i++){
-    fTrack->SetBinContent(ToRemoveXBin[i],ToRemoveYBin[i],0);
+        }
+      }
+    }
   }
 
+  for(int i = 0; i < ToRemoveXBin.size(); i++){
+    fTrack->SetBinContent(ToRemoveXBin[i], ToRemoveYBin[i], 0);
+  }
 }
 
 /**
  * Applies a threshold to the track histogram, setting bin contents below a specified value to zero.
  * This method is useful for further noise reduction and data cleaning.
  */
-void Analyzer::ApplyThr(){
+void Analyzer::ApplyThr(double EnThr){
   Int_t XBinMin=fTrack->GetXaxis()->GetFirst();
   Int_t XBinMax=XBinMin+fTrack->GetXaxis()->GetNbins();
 
@@ -1055,7 +1054,7 @@ void Analyzer::ApplyThr(){
   for(int i=XBinMin; i<XBinMax;i++){
     for(int j=YBinMin;j<YBinMax;j++){
       z=fTrack->GetBinContent(i,j);
-      if(z>0 && z<0.5){
+      if(z>0 && z<=EnThr){
 	fTrack->SetBinContent(i,j,0);
       }
     }
