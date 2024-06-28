@@ -116,8 +116,8 @@ public:
     double AngleLineMaxRMS();
     double RMSOnLine(double Phi);
     double SkewOnMainAxis();
-    void RemoveNoise(double a=0);
-    void ApplyThr(double a=0);
+    void RemoveNoise(double EnSum=0);
+    void ApplyThr(double EnThr=0);
     void ImpactPoint(const char* nometh2);
     void ScaledTrack(const char* nometh2);
 

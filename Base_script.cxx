@@ -19,6 +19,8 @@
 #include <TGraphErrors.h>
 #include <TLegend.h>
 #include <TLegendEntry.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -45,6 +47,23 @@ void ScIndicesElem(int nSc,int* ScNelements, vector<int>& B, vector<int>& E){
 // nSc_red: number of processed superclusters (output)
 // B: begin indices for reduced pixels (output)
 // E: end indices for reduced pixels (output)
+
+// Function to create a directory if it does not exist
+void createDirectoryIfNotExists(const std::string& path) {
+    struct stat info;
+    if (stat(path.c_str(), &info) != 0) {
+        // Directory does not exist, create it
+        if (mkdir(path.c_str(), 0777) == -1) {
+            cerr << "Error: " << strerror(errno) << endl;
+            exit(1);
+        }
+    } else if (!(info.st_mode & S_IFDIR)) {
+        // Path exists but is not a directory
+        cerr << "Error: " << path << " exists but is not a directory" << endl;
+        exit(1);
+    }
+}
+
 void ScIndicesElem(int nSc, UInt_t npix, float* sc_redpixID, int &nSc_red, vector<int>& B, vector<int>& E){
   nSc_red=0;
   B.clear();
@@ -94,6 +113,10 @@ int closest_divisor(int A, float B){
 }
 
 int main(int argc, char** argv){
+
+  // Create the "Tracks" folder if it does not exist
+  string tracksFolder = "./Tracks";
+  createDirectoryIfNotExists(tracksFolder);
 
 // Open the input ROOT file and get the "Events" TTree
   TFile* f = TFile::Open(Form("%s",argv[1]));
@@ -328,7 +351,7 @@ int main(int argc, char** argv){
         Traccia.ImprCorrectAngle();
         Traccia.BuildLineDirection();
 
-        Traccia.SavePicDir(Form("Track%i_event%i_run%i.png",counter,event,run));
+        //Traccia.SavePicDir(Form("Track%i_event%i_run%i.png",counter,event,run));
 
         xIP=Traccia.GetXIP();
         yIP=Traccia.GetYIP();
