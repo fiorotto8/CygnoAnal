@@ -174,12 +174,13 @@ fLineDirection(nullptr)
 	fminy=npixelorig+100;
 	fmaxx=-1;
 	fmaxy=-1;
-	for(int i=fxcentr-npixel/2;i<fxcentr+npixel/2;i++)
-	{
-		for(int j=fycentr-npixel/2;j<fycentr+npixel/2;j++)
-		{
+	for(int i=fxcentr-npixel/2;i<fxcentr+npixel/2;i++) {
+
+		for(int j=fycentr-npixel/2;j<fycentr+npixel/2;j++) {
+
 			double x=Tracklarge->GetBinContent(i,j);
-			if(i<fminx && x>0)  fminx=i;
+			
+      if(i<fminx && x>0)  fminx=i;
 			if(i>fmaxx && x>0)  fmaxx=i;
 			if(j<fminy && x>0)  fminy=j;
 			if(j>fmaxy && x>0)  fmaxy=j;
@@ -189,14 +190,13 @@ fLineDirection(nullptr)
 	fnpixelx=fmaxx-fminx+1+10;
 	fnpixely=fmaxy-fminy+1+10;
 	fTrack=new TH2F(nometh2,nometh2,fnpixelx,0,fnpixelx,fnpixely,0,fnpixely);
-	for(int j=1;j<=fnpixelx;j++)
-	{
-		for(int k=1;k<=fnpixely;k++)
-		{
+	for(int j=1;j<=fnpixelx;j++) {
+
+		for(int k=1;k<=fnpixely;k++) {
+
 			fTrack->SetBinContent(j,k,Tracklarge->GetBinContent(fminx+j-1-5,fminy+k-1-5));
 		}
 	}
-
 
 	TH1D *tax=fTrack->ProjectionX();
 	tax->Fit("gaus","Q");
@@ -207,18 +207,17 @@ fLineDirection(nullptr)
 	delete tax;
 	delete tay;
 
-	for(int j=1;j<=fnpixelx;j++)
-	{
-		for(int k=1;k<=fnpixely;k++)
-		{
-			if(fTrack->GetBinContent(j,k)>0)
-			{
+	for(int j=1;j<=fnpixelx;j++) {
+
+		for(int k=1;k<=fnpixely;k++) {
+
+			if(fTrack->GetBinContent(j,k)>0) {
+
 				double x=sqrt((fycentr-k)*(fycentr-k) + (fxcentr-j)*(fxcentr-j) );
 				if(x>fradius)  fradius=x;
 			}
 		}
 	}
-
 }
 
 /**
@@ -255,8 +254,9 @@ fLineDirection(nullptr)
 	fmaxx=0;
 	fmaxy=0;
 
-	for(int i=0;i<Tracklarge->GetXaxis()->GetNbins();i++){
-    for(int j=0;j<Tracklarge->GetYaxis()->GetNbins();j++){
+	for(int i=0;i<Tracklarge->GetXaxis()->GetNbins();i++) {
+    
+    for(int j=0;j<Tracklarge->GetYaxis()->GetNbins();j++) {
 
       double x=Tracklarge->GetBinContent(i,j);
 
@@ -264,7 +264,6 @@ fLineDirection(nullptr)
       if(i>fmaxx && x>0)  fmaxx=i;
       if(j<fminy && x>0)  fminy=j;
       if(j>fmaxy && x>0)  fmaxy=j;
-
     }
 	}
 
@@ -358,7 +357,7 @@ fLineDirection(nullptr)
   } */
 
   ///////  Original version
-  /*
+  // /*
 	fminx = TMath::MinElement(E-B,&X[B]);
 	fmaxx = TMath::MaxElement(E-B,&X[B]);
 	fminy = TMath::MinElement(E-B,&Y[B]);
@@ -375,14 +374,16 @@ fLineDirection(nullptr)
 	//std::cout << fnpixelx<<"\t"<<fminx <<"\t"<< fmaxx << "\t" << fnpixely <<"\t"<< fminy <<"\t"<< fmaxy << std::endl;
 
 	fTrack=new TH2F(Form("A%s",nometh2),Form("A%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
-	for(int i=B;i<E;i++){
+	for(int i=B;i<E;i++) {
+    
     if (Z[i]>0) {
-    fTrack->SetBinContent(fTrack->GetXaxis()->FindBin(X[i]),fTrack->GetYaxis()->FindBin(Y[i]),Z[i]);
-    fintegral+=Z[i];
+      
+      fTrack->SetBinContent(fTrack->GetXaxis()->FindBin(X[i]),fTrack->GetYaxis()->FindBin(Y[i]),Z[i]);
+      fintegral+=Z[i];
     }
 	}
-  */
-  // /*
+  // */
+  /*
   ///////   David's version, careful with rotations
 
 	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
@@ -401,12 +402,14 @@ fLineDirection(nullptr)
   fTrack=new TH2F(Form("%s",nometh2),Form("%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
 
 	for(int i=B;i<E;i++){
+
     if (Z[i]>0) {
+      
       fTrack->SetBinContent(fTrack->GetXaxis()->FindBin( 2305 - X[i]),fTrack->GetYaxis()->FindBin( 2305 - Y[i]),Z[i]); // cahnge david (rotation)
       fintegral+=Z[i];
     }
 	}
-//  */
+ */
 
 	//fTrack->Rebin2D(2,2);
 	fPhiMainAxis=AngleLineMaxRMS();
@@ -438,53 +441,58 @@ Analyzer::~Analyzer()
  * @return The calculated sigma (spread) along the main axis.
  */
 double Analyzer::GetSigmaAroundBar() {
-    double spread = 0;
-    double totalWeight = 0;
-    double sumDistances = 0;
-    double sumDistancesSquared = 0;
+  
+  double spread = 0;
+  double totalWeight = 0;
+  double sumDistances = 0;
+  double sumDistancesSquared = 0;
 
-    double cosPhi = cos(fPhiMainAxis);
-    double sinPhi = sin(fPhiMainAxis);
-    double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
-    double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
+  double cosPhi = cos(fPhiMainAxis);
+  double sinPhi = sin(fPhiMainAxis);
+  double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
+  double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
 
-    // Calculate the coordinates for the perpendicular lines
-    double x1 = fXbar - fRange * cosPhi;
-    double y1 = fYbar - fRange * sinPhi;
-    double x2 = fXbar + fRange * cosPhi;
-    double y2 = fYbar + fRange * sinPhi;
+  // Calculate the coordinates for the perpendicular lines
+  double x1 = fXbar - fRange * cosPhi;
+  double y1 = fYbar - fRange * sinPhi;
+  double x2 = fXbar + fRange * cosPhi;
+  double y2 = fYbar + fRange * sinPhi;
 
-    for (int i = 1; i <= fnpixelx; ++i) {
-        for (int j = 1; j <= fnpixely; ++j) {
-            double binContent = fTrack->GetBinContent(i, j);
-            if (binContent > 0) {
-                double x = fTrack->GetXaxis()->GetBinCenter(i);
-                double y = fTrack->GetYaxis()->GetBinCenter(j);
+  for (int i = 1; i <= fnpixelx; ++i) {
+    for (int j = 1; j <= fnpixely; ++j) {
 
-                // Project the distance onto the perpendicular line
-                double distance1 = (x - x1) * cosPerpPhi + (y - y1) * sinPerpPhi;
-                double distance2 = (x - x2) * cosPerpPhi + (y - y2) * sinPerpPhi;
+      double binContent = fTrack->GetBinContent(i, j);
+      if (binContent > 0) {
 
-                // Choose the projection that falls within the range
-                double distance = (fabs(distance1) <= fRange) ? distance1 : distance2;
+        double x = fTrack->GetXaxis()->GetBinCenter(i);
+        double y = fTrack->GetYaxis()->GetBinCenter(j);
 
-                // Accumulate the weighted sums if within range
-                if (fabs(distance) <= fRange) {
-                    sumDistances += distance * binContent;
-                    sumDistancesSquared += distance * distance * binContent;
-                    totalWeight += binContent;
-                }
-            }
+        // Project the distance onto the perpendicular line
+        double distance1 = (x - x1) * cosPerpPhi + (y - y1) * sinPerpPhi;
+        double distance2 = (x - x2) * cosPerpPhi + (y - y2) * sinPerpPhi;
+
+        // Choose the projection that falls within the range
+        double distance = (fabs(distance1) <= fRange) ? distance1 : distance2;
+
+        // Accumulate the weighted sums if within range
+        if (fabs(distance) <= fRange) {
+
+          sumDistances += distance * binContent;
+          sumDistancesSquared += distance * distance * binContent;
+          totalWeight += binContent;
         }
+      }
     }
+  }
 
-    if (totalWeight > 0) {
-        double meanDistance = sumDistances / totalWeight;
-        double meanDistanceSquared = sumDistancesSquared / totalWeight;
-        spread = sqrt(meanDistanceSquared - meanDistance * meanDistance);
-    }
+  if (totalWeight > 0) {
 
-    return spread;
+    double meanDistance = sumDistances / totalWeight;
+    double meanDistanceSquared = sumDistancesSquared / totalWeight;
+    spread = sqrt(meanDistanceSquared - meanDistance * meanDistance);
+  }
+
+  return spread;
 }
 
 /**
@@ -530,21 +538,21 @@ void Analyzer::Reset()
 	fNPIP=0;
 	fwScal=0;
 	fXbar=0;
-    fYbar=0;
-    fPhiMainAxis=0;
-    fRMSOnMainAxis=0;
-    fSkewOnLine=0;
-    fXIPPrev=0;
-    fYIPPrev=0;
-    fXIP=0;
-    fYIP=0;
-    fPhiDir=0;
+  fYbar=0;
+  fPhiMainAxis=0;
+  fRMSOnMainAxis=0;
+  fSkewOnLine=0;
+  fXIPPrev=0;
+  fYIPPrev=0;
+  fXIP=0;
+  fYIP=0;
+  fPhiDir=0;
 
 	delete fTrack;
 	fTrack=nullptr;
-    delete fTrackTail;
-    fTrackTail=nullptr;
-    delete fScaledTrack;
+  delete fTrackTail;
+  fTrackTail=nullptr;
+  delete fScaledTrack;
 	fScaledTrack=nullptr;
 	delete fLineDirection;
 	fLineDirection=nullptr;
@@ -562,11 +570,11 @@ void Analyzer::Reset()
 void Analyzer::Integral()
 {
 	fintegral=0.;
-	for(int i=fminx;i<fmaxx;i++)
-	{
-		for(int j=fminy;j<fmaxy;j++)
-		{
-			fintegral+=fTrack->GetBinContent(i,j);
+	for(int i=fminx;i<fmaxx;i++) {
+
+		for(int j=fminy;j<fmaxy;j++) {
+
+		  fintegral+=fTrack->GetBinContent(i,j);
 		}
 	}
 }
@@ -643,51 +651,51 @@ void Analyzer::SavePic(const char* nomepic)
  * @param nomepic The filename for the saved picture.
  */
 void Analyzer::SavePicDirWithRange(const char* nomepic) {
-    TCanvas* canv = new TCanvas("canv", "canv", 1500, 1500); // Adjusted canvas size to 1500x1500
+  TCanvas* canv = new TCanvas("canv", "canv", 1500, 1500); // Adjusted canvas size to 1500x1500
 
-    TLegend* l = new TLegend();
-    l->AddEntry((TObject*)0, Form("%f", fPhiDir / TMath::Pi() * 180));
+  TLegend* l = new TLegend();
+  l->AddEntry((TObject*)0, Form("%f", fPhiDir / TMath::Pi() * 180));
 
-    fTrack->Draw("COLZ");
-    fBarPlot->Draw("SAMEP");
-    fLineMaxRMS->Draw("SAME");
+  fTrack->Draw("COLZ");
+  fBarPlot->Draw("SAMEP");
+  fLineMaxRMS->Draw("SAME");
 
-    // Calculate the coordinates for the range lines
-    double cosPhi = cos(fPhiMainAxis);
-    double sinPhi = sin(fPhiMainAxis);
-    double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
-    double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
-    
-    double x1 = fXbar - fRange * cosPhi;
-    double y1 = fYbar - fRange * sinPhi;
-    double x2 = fXbar + fRange * cosPhi;
-    double y2 = fYbar + fRange * sinPhi;
+  // Calculate the coordinates for the range lines
+  double cosPhi = cos(fPhiMainAxis);
+  double sinPhi = sin(fPhiMainAxis);
+  double cosPerpPhi = cos(fPhiMainAxis + TMath::Pi() / 2);
+  double sinPerpPhi = sin(fPhiMainAxis + TMath::Pi() / 2);
+  
+  double x1 = fXbar - fRange * cosPhi;
+  double y1 = fYbar - fRange * sinPhi;
+  double x2 = fXbar + fRange * cosPhi;
+  double y2 = fYbar + fRange * sinPhi;
 
-    // Extend the lines to cover the visible range of the canvas
-    double xMin = fTrack->GetXaxis()->GetXmin();
-    double xMax = fTrack->GetXaxis()->GetXmax();
-    double yMin = fTrack->GetYaxis()->GetXmin();
-    double yMax = fTrack->GetYaxis()->GetXmax();
+  // Extend the lines to cover the visible range of the canvas
+  double xMin = fTrack->GetXaxis()->GetXmin();
+  double xMax = fTrack->GetXaxis()->GetXmax();
+  double yMin = fTrack->GetYaxis()->GetXmin();
+  double yMax = fTrack->GetYaxis()->GetXmax();
 
-    TLine* line1 = new TLine(x1 + (xMin - fXbar) * cosPerpPhi, y1 + (yMin - fYbar) * sinPerpPhi,
-                             x1 + (xMax - fXbar) * cosPerpPhi, y1 + (yMax - fYbar) * sinPerpPhi);
-    line1->SetLineColor(kRed);
-    line1->SetLineStyle(2);
-    line1->Draw("SAME");
+  TLine* line1 = new TLine(x1 + (xMin - fXbar) * cosPerpPhi, y1 + (yMin - fYbar) * sinPerpPhi,
+                            x1 + (xMax - fXbar) * cosPerpPhi, y1 + (yMax - fYbar) * sinPerpPhi);
+  line1->SetLineColor(kRed);
+  line1->SetLineStyle(2);
+  line1->Draw("SAME");
 
-    TLine* line2 = new TLine(x2 + (xMin - fXbar) * cosPerpPhi, y2 + (yMin - fYbar) * sinPerpPhi,
-                             x2 + (xMax - fXbar) * cosPerpPhi, y2 + (yMax - fYbar) * sinPerpPhi);
-    line2->SetLineColor(kRed);
-    line2->SetLineStyle(2);
-    line2->Draw("SAME");
+  TLine* line2 = new TLine(x2 + (xMin - fXbar) * cosPerpPhi, y2 + (yMin - fYbar) * sinPerpPhi,
+                            x2 + (xMax - fXbar) * cosPerpPhi, y2 + (yMax - fYbar) * sinPerpPhi);
+  line2->SetLineColor(kRed);
+  line2->SetLineStyle(2);
+  line2->Draw("SAME");
 
-    l->Draw("SAME");
+  l->Draw("SAME");
 
-    canv->SaveAs(Form("Tracks/%s", nomepic));
+  canv->SaveAs(Form("Tracks/%s", nomepic));
 
-    delete canv;
-    delete line1;
-    delete line2;
+  delete canv;
+  delete line1;
+  delete line2;
 }
 
 /**
@@ -735,7 +743,7 @@ void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
   canv->Divide(2,2);
 
   TLegend* l = new TLegend();
-  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180), "p");
+  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180));
 
   TLegend* l2 = new TLegend();
   l2->AddEntry((TObject*)0,Form("NPx=%i",fnpixelx*fnpixely)); 	//assuming the track is a rectangle... doubtful
@@ -785,7 +793,6 @@ void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
   fLineDirection->SetLineWidth(2);
   fLineDirection->SetLineStyle(9);
   fLineDirection->Draw("SAME");
-  l->Draw("same");
 
   // canv->SaveAs(Form("Tracks/%s.png",nomepic));
   canv->SetName(nomepic);
@@ -799,7 +806,8 @@ void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
  *
  * @param nomefile The filename for the saved ROOT file.
  */
-void Analyzer::SaveRootFile(const char* nomefile){
+void Analyzer::SaveRootFile(const char* nomefile)
+{  
   TFile* f = new TFile(Form("Tracks/%s",nomefile),"recreate");
   f->cd();
 
@@ -826,18 +834,19 @@ void Analyzer::Barycenter()
   double Z=0;
   double ChargeTot=0;
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Z=fTrack->GetBinContent(i,j);
-    if(Z>0)
-    {
-      Xb+=(Z*fTrack->GetXaxis()->GetBinCenter(i));
-      Yb+=(Z*fTrack->GetYaxis()->GetBinCenter(j));
-      ChargeTot+=Z;
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fTrack->GetBinContent(i,j);
+      
+      if(Z>0) {
+
+        Xb+=(Z*fTrack->GetXaxis()->GetBinCenter(i));
+        Yb+=(Z*fTrack->GetYaxis()->GetBinCenter(j));
+        ChargeTot+=Z;
+      }
     }
-	}
   }
 
   Xb/=ChargeTot;
@@ -861,18 +870,19 @@ void Analyzer::Barycenter(TH2F* Tr,double *X,double *Y)
   double Z=0;
   double ChargeTot=0;
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Z=Tr->GetBinContent(i,j);
-    if(Z>0)
-    {
-      Xb+=(Z*Tr->GetXaxis()->GetBinCenter(i));
-      Yb+=(Z*Tr->GetYaxis()->GetBinCenter(j));
-      ChargeTot+=Z;
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=Tr->GetBinContent(i,j);
+      
+      if(Z>0) {
+
+        Xb+=(Z*Tr->GetXaxis()->GetBinCenter(i));
+        Yb+=(Z*Tr->GetYaxis()->GetBinCenter(j));
+        ChargeTot+=Z;
+      }
     }
-	}
   }
 
   Xb/=ChargeTot;
@@ -912,18 +922,17 @@ double Analyzer::AngleLineMaxRMS()
   fBarPlot->SetPoint(0,fXbar,fYbar);
   fBarPlot->SetMarkerStyle(8);
 
+  for(int i=1;i<fnpixelx;i++) {
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Z=fTrack->GetBinContent(i,j);
-    if(Z>0)
-    {
-      Sum1+= Z*(fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*(fTrack->GetYaxis()->GetBinCenter(j)-fYbar);
-      Sum2+= Z*( (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*(fTrack->GetYaxis()->GetBinCenter(j)-fYbar) - (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*(fTrack->GetXaxis()->GetBinCenter(i)-fXbar)  );
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fTrack->GetBinContent(i,j);
+      if(Z>0) {
+
+        Sum1+= Z*(fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*(fTrack->GetYaxis()->GetBinCenter(j)-fYbar);
+        Sum2+= Z*( (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*(fTrack->GetYaxis()->GetBinCenter(j)-fYbar) - (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*(fTrack->GetXaxis()->GetBinCenter(i)-fXbar)  );
+      }
     }
-	}
   }
 
   Phi=-0.5*TMath::ATan(2*Sum1/Sum2);
@@ -931,18 +940,17 @@ double Analyzer::AngleLineMaxRMS()
   RmsAng=RMSOnLine(Phi);
   RmsAngPerp=RMSOnLine(Phi+TMath::Pi()/2);
 
-  if( RmsAng > RmsAngPerp )
-  {
-      fRMSOnMainAxis=RmsAng;
-      return Phi;
-  }
-  else
-  {
-      fRMSOnMainAxis=RmsAngPerp;
-      if(Phi+TMath::Pi()/2>TMath::Pi()/2)     return Phi+TMath::Pi()/2-TMath::Pi();
-      else     return Phi+TMath::Pi()/2;
-  }
+  if( RmsAng > RmsAngPerp ) {
 
+    fRMSOnMainAxis=RmsAng;
+    return Phi;
+  }
+  else {
+
+    fRMSOnMainAxis=RmsAngPerp;
+    if(Phi+TMath::Pi()/2>TMath::Pi()/2)     return Phi+TMath::Pi()/2-TMath::Pi();
+    else     return Phi+TMath::Pi()/2;
+  }
 }
 
 
@@ -959,17 +967,18 @@ double Analyzer::RMSOnLine(double Phi)
   double Z=0.;
 
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Z=fTrack->GetBinContent(i,j);
-    if(Z!=0)
-    {
-      RMS+= Z*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(Phi) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(Phi) )*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(Phi) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(Phi) );
-      ChargeTot+=Z;
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fTrack->GetBinContent(i,j);
+      
+      if(Z!=0) {
+
+        RMS+= Z*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(Phi) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(Phi) )*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(Phi) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(Phi) );
+        ChargeTot+=Z;
+      }
     }
-	}
   }
 
   return RMS;
@@ -987,18 +996,19 @@ double Analyzer::SkewOnMainAxis(){
   Float_t ChargeTot=0;
   Float_t Z;
 
-  for(int i=1;i<fnpixelx;i++)
-    {
-      for(int j=1;j<fnpixely;j++)
-	{
-    Z=fTrack->GetBinContent(i,j);
-    if(Z>0)
-      {
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fTrack->GetBinContent(i,j);
+      
+      if(Z>0) {
+
         Skew+= Z*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(fPhiMainAxis) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(fPhiMainAxis) )*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(fPhiMainAxis) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(fPhiMainAxis) )*( (fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*cos(fPhiMainAxis) + (fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*sin(fPhiMainAxis) );
         ChargeTot+=Z;
       }
-	}
     }
+  }
 
   fSkewOnLine=Skew;
 
@@ -1018,8 +1028,11 @@ void Analyzer::RemoveNoise(double EnSum){
   Float_t ETemp;
 
   for(int i = 1; i < fnpixelx - 1; i++){
+    
     for(int j = 1; j < fnpixely - 1; j++){
-      if(fTrack->GetBinContent(i, j) > 0){
+      
+      if(fTrack->GetBinContent(i, j) > 0) {
+
         ETemp = 0;
         if(fTrack->GetBinContent(i + 1, j) >= 0) ETemp += fTrack->GetBinContent(i + 1, j);
         if(fTrack->GetBinContent(i - 1, j) >= 0) ETemp += fTrack->GetBinContent(i - 1, j);
@@ -1053,14 +1066,16 @@ void Analyzer::ApplyThr(double EnThr){
   Float_t z;
 
   for(int i=XBinMin; i<XBinMax;i++){
+    
     for(int j=YBinMin;j<YBinMax;j++){
+      
       z=fTrack->GetBinContent(i,j);
+      
       if(z>0 && z<=EnThr){
-	fTrack->SetBinContent(i,j,0);
+	      fTrack->SetBinContent(i,j,0);
       }
     }
   }
-
 }
 
 /**
@@ -1167,16 +1182,17 @@ void Analyzer::ScaledTrack(const char* nometh2){
 
   for(int j=0;j<fnpixelx;j++){
     for(int l=0;l<fnpixely;l++){
+      
       if(fTrack->GetBinContent(j,l)>0){
-	X=fTrack->GetXaxis()->GetBinCenter(j);
-	Y=fTrack->GetYaxis()->GetBinCenter(l);
-	Z=fTrack->GetBinContent(j,l);
+      
+        X=fTrack->GetXaxis()->GetBinCenter(j);
+        Y=fTrack->GetYaxis()->GetBinCenter(l);
+        Z=fTrack->GetBinContent(j,l);
 
-	fScaledTrack->SetBinContent(fScaledTrack->GetXaxis()->FindBin(X),fScaledTrack->GetYaxis()->FindBin(Y),Z*exp(-( sqrt( (X-fXIP)*(X-fXIP)+(Y-fYIP)*(Y-fYIP) ) )/fwScal ) );
+        fScaledTrack->SetBinContent(fScaledTrack->GetXaxis()->FindBin(X),fScaledTrack->GetYaxis()->FindBin(Y),Z*exp(-( sqrt( (X-fXIP)*(X-fXIP)+(Y-fYIP)*(Y-fYIP) ) )/fwScal ) );
       }
     }//chiudo l
   }//chiudo for j
-
 }
 
 /**
@@ -1192,34 +1208,34 @@ void Analyzer::Direction()
   double RmsAng;
   double RmsAngPerp;
 
-  for(int i=1;i<fnpixelx;i++)
-    {
-      for(int j=1;j<fnpixely;j++)
-	{
-    Z=fScaledTrack->GetBinContent(i,j);
-    if(Z>0)
-      {
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fScaledTrack->GetBinContent(i,j);
+      if(Z>0) {
+
         Sum1+= Z*(fScaledTrack->GetXaxis()->GetBinCenter(i)-fXIP)*(fScaledTrack->GetYaxis()->GetBinCenter(j)-fYIP);
         Sum2+= Z*( (fScaledTrack->GetYaxis()->GetBinCenter(j)-fYIP)*(fScaledTrack->GetYaxis()->GetBinCenter(j)-fYIP) - (fScaledTrack->GetXaxis()->GetBinCenter(i)-fXIP)*(fScaledTrack->GetXaxis()->GetBinCenter(i)-fXIP)  );
       }
-	}
     }
+  }
 
   Phi=-0.5*TMath::ATan(2*Sum1/Sum2);
 
   RmsAng=RMSOnLine(Phi);
   RmsAngPerp=RMSOnLine(Phi+TMath::Pi()/2);
 
-  if( RmsAng > RmsAngPerp )
-    {
-      fPhiDir=Phi;
-    }
-  else
-    {
-      fRMSOnMainAxis=RmsAngPerp;
-      if(Phi+TMath::Pi()/2>TMath::Pi()/2)     fPhiDir = Phi+TMath::Pi()/2-TMath::Pi();
-      else     fPhiDir= Phi+TMath::Pi()/2;
-    }
+  if( RmsAng > RmsAngPerp ) {
+
+    fPhiDir=Phi;
+  }
+  else {
+
+    fRMSOnMainAxis=RmsAngPerp;
+    if(Phi+TMath::Pi()/2>TMath::Pi()/2)     fPhiDir = Phi+TMath::Pi()/2-TMath::Pi();
+    else     fPhiDir= Phi+TMath::Pi()/2;
+  }
 
 }
 
@@ -1240,7 +1256,8 @@ void Analyzer::ImprCorrectAngle(){
     } else {
       fPhiDir= fPhiDir-TMath::Pi();
     }//chiudo else qIP
-  } else {
+  } 
+  else {
     if(qIP<qPIP){
       fPhiDir= fPhiDir+TMath::Pi();
     } else {
@@ -1265,31 +1282,31 @@ void Analyzer::Edges(double &Xl, double &Yl, double &Xr, double &Yr, double slop
 
   Barycenter(fTrack, &fXbar, &fYbar);
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Zp=fTrack->GetBinContent(i,j);
-    if(Zp!=0)
-    {
-      ii=fTrack->GetXaxis()->GetBinCenter(i);
-      jj=fTrack->GetYaxis()->GetBinCenter(j);
-      Xp = (1./(1+pow(slope,2)))*(ii+fXbar*pow(slope,2)+slope*(jj-fYbar));
-      Yp = fYbar+(slope/(1+pow(slope,2)))*(ii-fXbar+slope*(jj-fYbar));
-      dist = sqrt(pow((Xp-fXbar),2)+pow((Yp-fYbar),2));
-      if(dist>tempdist_r && Xp>fXbar)
-      {
-      tempdist_r = dist;
-      Xr = Xp; Yr = Yp;
-      }
-      else if(dist>tempdist_l && Xp<fXbar)
-      {
-      tempdist_l = dist;
-      Xl = Xp; Yl = Yp;
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Zp=fTrack->GetBinContent(i,j);
+      if(Zp!=0) {
+
+        ii=fTrack->GetXaxis()->GetBinCenter(i);
+        jj=fTrack->GetYaxis()->GetBinCenter(j);
+        Xp = (1./(1+pow(slope,2)))*(ii+fXbar*pow(slope,2)+slope*(jj-fYbar));
+        Yp = fYbar+(slope/(1+pow(slope,2)))*(ii-fXbar+slope*(jj-fYbar));
+        dist = sqrt(pow((Xp-fXbar),2)+pow((Yp-fYbar),2));
+        
+        if(dist>tempdist_r && Xp>fXbar) {
+
+          tempdist_r = dist;
+          Xr = Xp; Yr = Yp;
+        }
+        else if(dist>tempdist_l && Xp<fXbar) {
+
+          tempdist_l = dist;
+          Xl = Xp; Yl = Yp;
+        }
       }
     }
-
-	}
   }
 
   return;
@@ -1319,20 +1336,23 @@ TH1D* Analyzer::FillProfile(bool longitudinal, float x1, float x2)
 
   double Xp, Yp, Zp;
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Zp=fTrack->GetBinContent(i,j);
-    if(Zp!=0 )
-    {
-      ii=fTrack->GetXaxis()->GetBinCenter(i);
-      jj=fTrack->GetYaxis()->GetBinCenter(j);
-            if(ii>x1 && ii<x2){
-        Xp = (1/(1+pow(slope,2)))*(ii+fXbar*pow(slope,2)+slope*(jj-fYbar));
-        Yp = fYbar+(slope/(1+pow(slope,2)))*(ii-fXbar+slope*(jj-fYbar));
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Zp=fTrack->GetBinContent(i,j);
+      
+      if(Zp!=0 ) {
+
+        ii=fTrack->GetXaxis()->GetBinCenter(i);
+        jj=fTrack->GetYaxis()->GetBinCenter(j);
+        
+        if(ii>x1 && ii<x2) {
+
+          Xp = (1/(1+pow(slope,2)))*(ii+fXbar*pow(slope,2)+slope*(jj-fYbar));
+          Yp = fYbar+(slope/(1+pow(slope,2)))*(ii-fXbar+slope*(jj-fYbar));
           TrackProfile->Fill(sqrt(pow((Xp-xl),2)+pow((Yp-yl),2)),Zp);
-            }
+        }
       }
     }
   }
@@ -1359,7 +1379,8 @@ TH1D* Analyzer::CutProfile(TH1D* profile, double height)
   title += "_cut";
   TH1D* profile_cut = new TH1D(title.c_str(),title.c_str(),binmax-binmin,0,binmax-binmin);
 
-  for(int bins=binmin; bins<binmax; bins++){
+  for(int bins=binmin; bins<binmax; bins++) {
+
     profile_cut->SetBinContent(bins_cut,profile->GetBinContent(bins));
     bins_cut++;
   }
@@ -1379,16 +1400,17 @@ TH1D* Analyzer::FillProfileX()
 
   TH1D* TrackProfileX=new TH1D("TrackProfX","TrackProfX",fnpixelx,fminx,fmaxx);
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-  Zp=fTrack->GetBinContent(i,j);
-  if(Zp!=0)
-    {
-      TrackProfileX->Fill(fTrack->GetXaxis()->GetBinCenter(i),Zp);
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Zp=fTrack->GetBinContent(i,j);
+      
+      if(Zp!=0) {
+
+        TrackProfileX->Fill(fTrack->GetXaxis()->GetBinCenter(i),Zp);
+      }
     }
-  }
   }
 
   return TrackProfileX;
@@ -1406,14 +1428,14 @@ TH1D* Analyzer::FillProfileY()
 
   TH1D* TrackProfileY=new TH1D("TrackProfY","TrackProfY",fnpixely,fminy,fmaxy);
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-    for(int j=1;j<fnpixely;j++)
-    {
-    Zp=fTrack->GetBinContent(i,j);
-    if(Zp!=0)
-      {
-      TrackProfileY->Fill(fTrack->GetYaxis()->GetBinCenter(j),Zp);
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Zp=fTrack->GetBinContent(i,j);
+      if(Zp!=0) {
+
+        TrackProfileY->Fill(fTrack->GetYaxis()->GetBinCenter(j),Zp);
       }
     }
   }
@@ -1430,17 +1452,19 @@ TH1D* Analyzer::FillProfileY()
  */
 void Analyzer::AnglePCA(double &ang)
 {
-TMatrixD M(2,2);
-TMatrixD V(2,2);
-double x,y,x2,y2,xy;
-double Z;
+  TMatrixD M(2,2);
+  TMatrixD V(2,2);
+  double x,y,x2,y2,xy;
+  double Z;
 
-  for(int i=0; i<fnpixelx; i++)
-  {
-    for(int j=0; j<fnpixely; j++)
-    {
+  for(int i=0; i<fnpixelx; i++) {
+
+    for(int j=0; j<fnpixely; j++) {
+
       Z=fTrack->GetBinContent(i,j);
+      
       if(Z!=0){
+      
         x=(fTrack->GetXaxis()->GetBinCenter(i)-fXbar)*Z;
         y=(fTrack->GetYaxis()->GetBinCenter(j)-fYbar)*Z;
         x2 += x*x;
@@ -1450,14 +1474,14 @@ double Z;
     }
   }
 
-M(0,0) = x2;
-M(0,1) = M(1,0) = xy;
-M(1,1) = y2;
+  M(0,0) = x2;
+  M(0,1) = M(1,0) = xy;
+  M(1,1) = y2;
 
-TDecompSVD SVDmatrix(M);
-if(SVDmatrix.Decompose()) V = SVDmatrix.GetV();
+  TDecompSVD SVDmatrix(M);
+  if(SVDmatrix.Decompose()) V = SVDmatrix.GetV();
 
-ang = TMath::ATan(V(1,0)/V(0,0));
+  ang = TMath::ATan(V(1,0)/V(0,0));
 
 }
 
@@ -1493,17 +1517,17 @@ void Analyzer::FindNPeaks(TH1D* h, std::vector<std::pair<double,double>> &foundp
           if(it != peaks_tocompare.end()){ //if it's already stored
             continue;
           }
-	  else{ //it's a new peak, save it
+	        else{ //it's a new peak, save it
             peaks.push_back( std::make_pair(peaksPos[j],(double)i) );
-    continue;
+            continue;
           }
         }
         peaks.push_back(std::make_pair(peaksPos[j],(double)i));
       } //end loop sui picchi trovati
     } //end if peaks were found
 
-  peaks_tocompare.clear();
-  for(int k=0; k<npeaks; k++){peaks_tocompare.push_back(peaksPos[k]);}
+    peaks_tocompare.clear();
+    for(int k=0; k<npeaks; k++){peaks_tocompare.push_back(peaksPos[k]);}
 
   } //end scan on different sigma
 
@@ -1546,29 +1570,30 @@ void Analyzer::FindPeak(double &xpeak, double &ypeak, double &xpeak_rebin, doubl
   double sum1=0, sum2=0, sum3=0, sum4=0, sum5=0, a=0 , b=0;
   double Z=0;
 
-  for(int i=1;i<fnpixelx;i++)
-  {
-	for(int j=1;j<fnpixely;j++)
-	{
-    Z=fTrack->GetBinContent(i,j);
-    if(Z!=0)
-    {
-      sum1+= Z*(fTrack->GetXaxis()->GetBinCenter(i))*(fTrack->GetXaxis()->GetBinCenter(i));
-      sum2+= Z*(fTrack->GetYaxis()->GetBinCenter(j));
-      sum3+= Z*(fTrack->GetXaxis()->GetBinCenter(i));
-      sum4+= Z*(fTrack->GetXaxis()->GetBinCenter(i))*(fTrack->GetYaxis()->GetBinCenter(j));
-      sum5+= Z;
+  for(int i=1;i<fnpixelx;i++) {
+
+    for(int j=1;j<fnpixely;j++) {
+
+      Z=fTrack->GetBinContent(i,j);
+      
+      if(Z!=0) {
+
+        sum1+= Z*(fTrack->GetXaxis()->GetBinCenter(i))*(fTrack->GetXaxis()->GetBinCenter(i));
+        sum2+= Z*(fTrack->GetYaxis()->GetBinCenter(j));
+        sum3+= Z*(fTrack->GetXaxis()->GetBinCenter(i));
+        sum4+= Z*(fTrack->GetXaxis()->GetBinCenter(i))*(fTrack->GetYaxis()->GetBinCenter(j));
+        sum5+= Z;
+      }
     }
-	}
   }
 
-a = (sum1*sum2-sum3*sum4)/(sum5*sum1-(sum3*sum3));
-b = (sum5*sum4-sum3*sum2)/(sum5*sum1-(sum3*sum3));
+  a = (sum1*sum2-sum3*sum4)/(sum5*sum1-(sum3*sum3));
+  b = (sum5*sum4-sum3*sum2)/(sum5*sum1-(sum3*sum3));
 
-TF1* line = new TF1("leastsquare","[0]*x+[1]",1000,2000);
-line->SetParameters(b,a);
+  TF1* line = new TF1("leastsquare","[0]*x+[1]",1000,2000);
+  line->SetParameters(b,a);
 
-return line;
+  return line;
 
 }*/
 
