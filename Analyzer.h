@@ -97,12 +97,14 @@ public:
     //Setters for directionality
     inline void SetWScal(float a) {fwScal=a;}
     inline void SetNPIP(int a) {fNPIP=a;}
+    inline void SetrRangeSpread(double a) {fRange=a;}
 
     // Public interface for Analyzer functionality
     void Reset();
     void Integral();
     void SavetoFile(const char* nometh2);
     void SavePic(const char* nometh2);
+    void SavePicDirWithRange(const char* nomepic);
     void SavePicDir(const char* nomepic);
     void SaveRootFile(const char* nomefile);
 
@@ -114,8 +116,8 @@ public:
     double AngleLineMaxRMS();
     double RMSOnLine(double Phi);
     double SkewOnMainAxis();
-    void RemoveNoise(double a=0);
-    void ApplyThr();
+    void RemoveNoise(double EnSum=0);
+    void ApplyThr(double EnThr=0);
     void ImpactPoint(const char* nometh2);
     void ScaledTrack(const char* nometh2);
 
@@ -132,6 +134,7 @@ public:
     void FindPeak(double &xpeak, double &ypeak, double &xpeak_rebin, double &ypeak_rebin);
     // Additional methods and their documentation...
     int Execute_Atul_script(std::string pyvers, std::string inputfile, std::string outfolder, int entries, bool plot=false, bool text=false ) const;
+    double GetSigmaAroundBar();
 
 private:
     // Private member variables
@@ -170,6 +173,8 @@ private:
 
     double fPhiDir;
     TF1* fLineDirection;
+
+    double fRange;
 };
 
 #endif // ANALYZER_H
