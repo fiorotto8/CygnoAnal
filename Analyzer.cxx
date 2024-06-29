@@ -622,7 +622,7 @@ void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
   canv->Divide(2,2);
 
   TLegend* l = new TLegend();
-  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180));
+  l->AddEntry((TObject*)0, Form("%f",fPhiDir/TMath::Pi()*180), "p");
 
   TLegend* l2 = new TLegend();
   l2->AddEntry((TObject*)0,Form("NPx=%i",fnpixelx*fnpixely)); 	//assuming the track is a rectangle... doubtful
@@ -672,6 +672,7 @@ void Analyzer::PlotandSavetoFileDirectionalFull(const char* nomepic){
   fLineDirection->SetLineWidth(2);
   fLineDirection->SetLineStyle(9);
   fLineDirection->Draw("SAME");
+  l->Draw("same");
 
   // canv->SaveAs(Form("Tracks/%s.png",nomepic));
   canv->SetName(nomepic);
