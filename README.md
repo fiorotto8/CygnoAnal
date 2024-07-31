@@ -12,3 +12,8 @@ Optimized:
 ## To run
 
 ```./nameprog path_to_rootfile [output_directory]```
+
+## Python version
+
+- a minimal python implementation of the Analyzer class is in `Analyzer.py`
+- example for ALpha diffusion analysis is in `DiffusionAlpha.py` and a script to aggregate and plot in `plotDiffusion.py`

@@ -13,3 +13,5 @@ testAlpha
 AlphaDiffusion_testing.cxx
 splitROOT.py
 base
+__pycache__/
+crosscheck.py
