@@ -181,9 +181,12 @@ def fit_and_calculate_diffT(L_over_E, diffusionCUT_squared_mean, L_over_E_error,
     target_DiffT_error = np.sqrt((0.5 * np.sqrt(1 / (target_drift_v_v_per_um * slope)) * err_slope) ** 2 +
                                  (0.5 * slope / (target_drift_v_v_per_um ** (3/2)) * (0.05 * target_drift_v_v_per_um)) ** 2)
 
-    return target_DiffT, target_DiffT_error
+    sigma_0 = np.sqrt(fit_function.GetParameter(0))  # um
+    sigma_0_error = (0.5 * fit_function.GetParError(0)) / sigma_0  # um
 
-def create_diffusion_plot_with_cut(integral_cuts, DT_scan, DT_scan_err, y_line_value):
+    return target_DiffT, target_DiffT_error, sigma_0, sigma_0_error
+
+def create_diffusion_plot_with_cut(integral_cuts, DT_scan, DT_scan_err, y_line_value,range=None):
     # Create the graph
     graph = grapherr(integral_cuts, DT_scan, [0] * len(DT_scan), DT_scan_err, "Integral cut", "Diffusion [um^{1/2}]", write=False)
 
@@ -204,7 +207,7 @@ def create_diffusion_plot_with_cut(integral_cuts, DT_scan, DT_scan_err, y_line_v
     graph.SetTitle("Diffusion vs. Integral Cut with Horizontal Line")
     graph.GetXaxis().SetTitle("Integral cut")
     graph.GetYaxis().SetTitle("Diffusion [um^{1/2}]")
-    graph.GetYaxis().SetRangeUser(0.9*min(DT_scan), 1.35)  # Set the y-axis range
+    if range is not None: graph.GetYaxis().SetRangeUser(range[0],range[1])  # Set the y-axis range
 
     # Update and draw the canvas
     canvas.Update()
@@ -290,6 +293,7 @@ if args.verbose:
     root_file.cd("HoleScan")
     create_multigraph_plots_hole(mean_data)
 
+root_file.cd()
 distances_mm = [distance(hole) for hole in mean_data["hole_mean"]]
 l_over_e = [calculate_le(dist, drift_v) for dist, drift_v in zip(distances_mm, mean_data["DriftV_mean"])]
 l_over_e_error = err_LoverE*np.array(l_over_e,dtype="d")  # Assume 10% error for L/E
@@ -305,6 +309,9 @@ test_graph.Fit("fit_function", "RQ")
 test_graph.Write()
 slope = fit_function.GetParameter(1)  # V
 err_slope = fit_function.GetParError(1)  # V
+sigma_0 = np.sqrt(fit_function.GetParameter(0))  # um
+sigma_0_error = (0.5 * fit_function.GetParError(0)) / sigma_0  # um
+print("sigma_0 [um]:", sigma_0, "+/-", sigma_0_error) 
 
 DriftV=np.array(mean_data["DriftV_mean"],dtype="d")
 DriftV_err=err_V*DriftV
@@ -318,7 +325,7 @@ DiffT = np.sqrt(slope / drift_v_v_per_um)
 term1 = (0.5 * np.sqrt(1 / (drift_v_v_per_um * slope)) * err_slope) ** 2
 term2 = (0.5 * slope / (drift_v_v_per_um ** (3/2)) * drift_v_error_v_per_um) ** 2
 DiffT_error = np.sqrt(term1 + term2)
-print(DiffT,DriftV)
+#print(DiffT,DriftV)
 
 # Create the final graph for diffusion coefficient vs. E
 test_graph = grapherr(DriftV, DiffT, DriftV_err, DiffT_error, "E(V/cm)", "Diff coef. [um^{2}/V]")
@@ -332,13 +339,16 @@ root_file.mkdir("LYscan")
 root_file.cd("LYscan")
 
 integral_cuts = np.linspace(min(mean_data["sc_integral_mean"]), max(mean_data["sc_integral_mean"]) * 0.8, 20)
-print(len(integral_cuts))
+#print(len(integral_cuts))
 
-DT_scan,DT_scan_err = [],[]
-for cut in tqdm(integral_cuts):
+DT_scan,DT_scan_err,sigma_0_scan,sigma_0_scan_err = [],[],[],[]
+for cut in tqdm(integral_cuts, desc="Scanning Cut"):
     temp=fit_and_calculate_diffT(l_over_e, diffusionCUT_squared_mean, l_over_e_error, diffusionCUT_squared_error, mean_data, cut, err_V)
     DT_scan.append(temp[0])
     DT_scan_err.append(temp[1])
+    sigma_0_scan.append(temp[2])
+    sigma_0_scan_err.append(temp[3])
 
 root_file.cd()
-create_diffusion_plot_with_cut(integral_cuts, DT_scan, DT_scan_err, GarDiff)
+create_diffusion_plot_with_cut(integral_cuts, DT_scan, DT_scan_err, GarDiff,range=[0.9*min(DT_scan), max([1.35,1.1*max(DT_scan)])])
+create_diffusion_plot_with_cut(integral_cuts, sigma_0_scan, sigma_0_scan_err, 1000000)

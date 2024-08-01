@@ -464,7 +464,7 @@ class Track:
         fit_function.SetParameters(max(mean_charges), np.mean(distances), np.std(distances), 0)  # Example initial parameters
         fit_function.SetParNames("Amplitude", "Mean", "Sigma", "Constant")
         fit_function.SetParLimits(3, -2, 10)
-        fit_function.SetParLimits(2, 0, 20)
+        fit_function.SetParLimits(2, 0, 30)
         fit_function.SetParLimits(1, -10, 10)
         fit_function.SetParLimits(0, 0, 20)
         gaus_pars = []

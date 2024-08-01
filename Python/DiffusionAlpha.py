@@ -7,7 +7,6 @@ import ROOT
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
-import uproot3
 import awkward as ak
 import sys
 import re
@@ -38,7 +37,7 @@ def create_directory(directory):
     else:
         print(f"Directory {directory} already exists.")
 
-def append_event_data(event_data, events_arrays, j, k, stdCUT, trk, gaus_pars, offset, chi2,phi):
+def append_event_data(event_data, events_arrays, j, k, stdCUT, gaus_pars, offset, chi2,phi,i):
     # Append the data to the event_data dictionary
     event_data["nSc"].append(events_arrays["nSc"][j])
     event_data["sc_integral"].append(events_arrays["sc_integral"][j][k])
@@ -55,6 +54,11 @@ def append_event_data(event_data, events_arrays, j, k, stdCUT, trk, gaus_pars, o
     event_data["Gaussigma"].append(gaus_pars[2] if gaus_pars else None)
     event_data["offset"].append(offset)
     event_data["chi2"].append(chi2)
+    event_data["temperature"].append(data_dict["temperature_mean"][i])
+    event_data["pressure"].append(data_dict["pressure_mean"][i])
+    event_data["humidity"].append(data_dict["humidity_mean"][i])  
+    event_data["hole"].append(data_dict["hole_mean"][i])
+    event_data["DriftV"].append(data_dict["DriftV_mean"][i])
 
 def process_otherparam_list(param_list, data_dict, data_key):
     if param_list:
@@ -115,10 +119,37 @@ create_directory(output_dir)
 
 output_file_name = f'output_{args.inDir.replace("/", "")}.root'
 
+for i, file in tqdm(enumerate(file_list),desc="Processing OtherParam"):
+    #! open the file TTree
+    with uproot.open(file) as root_file:
+        #! File parameters
+        if "OtherParam" in root_file:
+            otherparam_tree = root_file["OtherParam"]
+            otherparam_arrays = otherparam_tree.arrays(library="pd")
+
+            try:
+                temperature_list = otherparam_arrays["KEG_temp"].tolist()
+                pressure_list = otherparam_arrays["KEG_pressure"].tolist()
+                humidity_list = otherparam_arrays["KEG_humidity"].tolist()
+            except KeyError:
+                temperature_list = otherparam_arrays["KEG_t"].tolist()
+                pressure_list = otherparam_arrays["KEG_p"].tolist()
+                humidity_list = otherparam_arrays["KEG_h"].tolist()
+            
+            hole_list = otherparam_arrays["HOLE_number"].tolist()
+            DriftV_list = otherparam_arrays["DRIFT_V"].tolist()
+
+            process_otherparam_list(temperature_list, data_dict, "temperature_mean")
+            process_otherparam_list(pressure_list, data_dict, "pressure_mean")
+            process_otherparam_list(humidity_list, data_dict, "humidity_mean")
+            process_otherparam_list(hole_list, data_dict, "hole_mean")
+            process_otherparam_list(DriftV_list, data_dict, "DriftV_mean")
+        else:
+            print(f"'OtherParam' TTree not found in {file}")
+
 dictionaries=[]
 # Loop over the file list and open each ROOT file
-#for i, file in enumerate(file_list):
-for i, file in enumerate(file_list):
+for i, file in enumerate(file_list[-1:]):
     print(f"File: {file}")
     #! open the file TTree
     with uproot.open(file) as root_file:
@@ -139,7 +170,12 @@ for i, file in enumerate(file_list):
             "Gausmean": [],
             "Gaussigma": [],
             "offset": [],
-            "chi2": []}
+            "chi2": [],
+            "temperature": [],
+            "pressure": [],
+            "humidity": [],
+            "hole": [],
+            "DriftV": []}
             events_tree = root_file["Events"]
             events_arrays = events_tree.arrays(["nSc", "nRedpix", "sc_redpixIdx", "sc_integral", "sc_length", "sc_width", "sc_tgausssigma", "redpix_ix", "redpix_iy", "redpix_iz","sc_nhits","sc_size"],library="pd")        
             #! cycle over the events
@@ -157,35 +193,9 @@ for i, file in enumerate(file_list):
                         if args.draw: trk.save_histogram(output_dir)
                         # Use the function to append data
                         if chi2 < 2: 
-                            append_event_data(event_data, events_arrays, j, k, stdCUT, trk, gaus_pars, offset, chi2,trk.fPhiMainAxis)
+                            append_event_data(event_data, events_arrays, j, k, stdCUT, gaus_pars, offset, chi2,trk.fPhiMainAxis,i)
                         #else: trk.save_histogram(output_dir)
                         del trk
-
-            #! File parameters
-            if "OtherParam" in root_file:
-                otherparam_tree = root_file["OtherParam"]
-                otherparam_arrays = otherparam_tree.arrays(library="pd")
-
-                try:
-                    temperature_list = otherparam_arrays["KEG_temp"].tolist()
-                    pressure_list = otherparam_arrays["KEG_pressure"].tolist()
-                    humidity_list = otherparam_arrays["KEG_humidity"].tolist()
-                except KeyError:
-                    temperature_list = otherparam_arrays["KEG_t"].tolist()
-                    pressure_list = otherparam_arrays["KEG_p"].tolist()
-                    humidity_list = otherparam_arrays["KEG_h"].tolist()
-                
-                hole_list = otherparam_arrays["HOLE_number"].tolist()
-                DriftV_list = otherparam_arrays["DRIFT_V"].tolist()
-
-                process_otherparam_list(temperature_list, data_dict, "temperature_mean")
-                process_otherparam_list(pressure_list, data_dict, "pressure_mean")
-                process_otherparam_list(humidity_list, data_dict, "humidity_mean")
-                process_otherparam_list(hole_list, data_dict, "hole_mean")
-                process_otherparam_list(DriftV_list, data_dict, "DriftV_mean")
-            else:
-                print(f"'OtherParam' TTree not found in {file}")
-
         dictionaries.append(event_data)
 
 # Create a new ROOT file
@@ -194,6 +204,6 @@ with uproot.recreate(output_file_name) as output_file:
     for m, event_data in enumerate(dictionaries):
         tree_name = f'{data_dict["hole_mean"][m]}-{data_dict["DriftV_mean"][m]:.3f}'
         output_file[tree_name] = {key: np.array(value) for key, value in event_data.items()}
-        
+
 stop_time = time.time()
 print("Code Execution Time: ", stop_time-start_time)
