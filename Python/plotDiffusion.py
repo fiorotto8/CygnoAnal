@@ -262,11 +262,6 @@ mean_data = {
 # Iterate over all items in the ROOT file
 for key in root_file.keys():
     tree_name = key[:-2]
-    hole, drift_v = extract_numbers(tree_name)
-    
-    # Add hole and DriftV to mean_data
-    mean_data["hole_mean"].append(hole)
-    mean_data["DriftV_mean"].append(drift_v)
     
     # Process the TTree to get branch means and errors
     tree = root_file[tree_name]
@@ -280,7 +275,6 @@ for key in root_file.keys():
             mean_data[mean_key].append(mean)
         if error_key in mean_data:
             mean_data[error_key].append(branch_errors[branch])
-
 # Open a ROOT file for writing plots
 root_file = ROOT.TFile.Open(f"Plots_{args.inFile}", "RECREATE")
 

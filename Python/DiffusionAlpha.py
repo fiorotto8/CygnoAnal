@@ -149,7 +149,7 @@ for i, file in tqdm(enumerate(file_list),desc="Processing OtherParam"):
 
 dictionaries=[]
 # Loop over the file list and open each ROOT file
-for i, file in enumerate(file_list[-1:]):
+for i, file in enumerate(file_list):
     print(f"File: {file}")
     #! open the file TTree
     with uproot.open(file) as root_file:
@@ -190,10 +190,11 @@ for i, file in enumerate(file_list[-1:]):
                     if nSc_red > 0 and lengths[k] > 0 and events_arrays["sc_integral"][j][k] > int_cut and events_arrays["sc_length"][j][k] > length_cut and events_arrays["sc_integral"][j][k]/events_arrays["sc_length"][j][k]<dEdx_cut:
                         trk = Analyzer.Track(f"Event_file{i}_image{j}_SC{k}", events_arrays["redpix_ix"][j], events_arrays["redpix_iy"][j], events_arrays["redpix_iz"][j], B[k], E[k])
                         stdCUT,gaus_pars,offset,chi2 = trk.GetSigmaAroundBar()
-                        if args.draw: trk.save_histogram(output_dir)
+                        if args.draw: 
+                            trk.save_histogram(output_dir)
+                            #trk.plot_histogram()
                         # Use the function to append data
-                        if chi2 < 2: 
-                            append_event_data(event_data, events_arrays, j, k, stdCUT, gaus_pars, offset, chi2,trk.fPhiMainAxis,i)
+                        append_event_data(event_data, events_arrays, j, k, stdCUT, gaus_pars, offset, chi2,trk.fPhiMainAxis,i)
                         #else: trk.save_histogram(output_dir)
                         del trk
         dictionaries.append(event_data)
