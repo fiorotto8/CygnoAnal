@@ -358,7 +358,8 @@ class Track:
             del line2
         del main_line
 
-    def GetSigmaAroundBar_old(self, Srange=100, Fit=True):
+
+    def GetSigmaAroundBar(self, Srange=100, Fit=True):
         """
         Calculate the sigma of the track along the main axis with a cut in the vicinity of the barycenter.
 
@@ -372,40 +373,35 @@ class Track:
         - offset (float): The constant offset from the fit.
         - chi2 (float): The reduced chi-squared value from the fit.
         """
-        
+
         # Set the range within which the sigma is calculated
         self.fRange = Srange
 
-        # Calculate the cosine and sine of the main axis angle (fPhiMainAxis)
-        # These are used for projecting onto the main and perpendicular axes
+        # Calculate cosine and sine of the main axis angle
         cosPhi = np.cos(self.fPhiMainAxis)
         sinPhi = np.sin(self.fPhiMainAxis)
 
         # Initialize lists to store distances and corresponding charges
-        distances, charges, err_charge_sys = [], [], 0.1
+        distances, charges = [], []
 
-        # Precompute bin centers for the histogram along x and y axes
+        # Precompute bin centers for x and y axes
         x_centers = np.array([self.fTrack.GetXaxis().GetBinCenter(i) for i in range(1, self.fnpixelx + 1)])
         y_centers = np.array([self.fTrack.GetYaxis().GetBinCenter(j) for j in range(1, self.fnpixely + 1)])
 
         # Loop over each bin in the 2D histogram
         for i in range(1, self.fnpixelx + 1):
             for j in range(1, self.fnpixely + 1):
-                # Get the content (weight or charge) of the current bin
                 binContent = self.fTrack.GetBinContent(i, j)
 
-                # If the bin has content, proceed with the calculation
                 if binContent > 0:
-                    # Get the center coordinates of the current bin
+                    # Coordinates of the current bin center
                     x = x_centers[i - 1]
                     y = y_centers[j - 1]
 
-                    # Calculate the projection of the distance from the bin center to the barycenter onto the main axis
+                    # Projection of the distance from the bin center to the barycenter onto the main and perpendicular axes
                     distance_onaxis = (x - self.fXbar) * cosPhi + (y - self.fYbar) * sinPhi
-                    
-                    # Calculate the projection of the distance from the bin center to the barycenter onto the perpendicular axis
                     distance_perpAxis = -(x - self.fXbar) * sinPhi + (y - self.fYbar) * cosPhi
-                    
+
                     # Accumulate the distance perpendicular to the main axis if it is within the specified range
                     if abs(distance_onaxis) <= self.fRange:
                         distances.append(distance_perpAxis)
@@ -413,119 +409,59 @@ class Track:
 
         # Ensure there is at least one distance value
         if len(distances) == 0:
-            distances.append(0)
-            charges.append(1)  # Add a default charge to avoid division by zero
+            return 0, [], 0, 0
 
-        # Calculate the weighted mean of the distances
+        # Convert lists to NumPy arrays for efficient computation
+        distances = np.array(distances)
+        charges = np.array(charges)
+
+        # Calculate weighted mean and standard deviation
         weighted_mean = np.average(distances, weights=charges)
-        
-        # Calculate the weighted variance of the distances
-        weighted_variance = np.average((distances - weighted_mean) ** 2, weights=charges)
-        
-        # Calculate the weighted standard deviation (spread) from the weighted variance
-        weighted_std_dev = np.sqrt(weighted_variance)
+        weighted_std_dev = np.sqrt(np.average((distances - weighted_mean) ** 2, weights=charges))
 
-        # Define the range and number of bins for the histogram of distances
-        min_distance, max_distance, n_bins = min(distances), max(distances), int(len(distances)/50)
-        
-        # Create the bin edges for the histogram
-        bins = np.linspace(min_distance, max_distance, n_bins + 1)
+        # Histogram binning setup
+        n_bins = max(10, len(distances) // 10)  # Ensure a reasonable number of bins
+        hist_range = (distances.min(), distances.max())
+        hist, bin_edges = np.histogram(distances, bins=n_bins, weights=charges, range=hist_range)
 
-        # Determine which bin each distance falls into
-        bin_indices = np.digitize(distances, bins)
+        # Calculate bin centers
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-        # Initialize arrays to store the total charge and the count of charges per bin
-        binned_charges, charge_counts, binned_charges_sq = np.zeros(n_bins), np.zeros(n_bins), np.zeros(n_bins)
+        # Error on the binned charges (using Poisson statistics as an example, adjust if needed)
+        err_binned_charges = np.sqrt(hist)
 
-        # Accumulate charges and charge counts for each bin
-        for charge, bin_idx in zip(charges, bin_indices):
-            if bin_idx > 0 and bin_idx <= n_bins:
-                binned_charges[bin_idx - 1] += charge
-                charge_counts[bin_idx - 1] += 1
-                binned_charges_sq[bin_idx - 1] += charge ** 2
-        
-        # Calculate mean charges and standard deviation for each bin, handling division by zero
-        with np.errstate(divide='ignore', invalid='ignore'):
-            # Mean charge per bin
-            mean_charges = np.true_divide(binned_charges, charge_counts)
-            mean_charges[charge_counts == 0] = 0
+        # Handle bins with zero total charge to avoid division by zero
+        valid_bins = hist > 0
+        bin_centers = bin_centers[valid_bins]
+        hist = hist[valid_bins]
+        err_binned_charges = err_binned_charges[valid_bins]
 
-            # Standard deviation of charge per bin
-            std_devs = np.sqrt(np.true_divide(binned_charges_sq, charge_counts) - np.square(mean_charges))
-            std_devs[charge_counts == 0] = 0
+        # Create a graph for fitting
+        self.SigmaDistrTH = grapherr(bin_centers, hist, np.zeros_like(bin_centers), err_binned_charges, "Distance(px)", "Charge(ADC)")
 
-            # Standard error of the mean charge per bin
-            err_binned_charges = np.true_divide(std_devs, np.sqrt(charge_counts))
-            err_binned_charges[charge_counts == 0] = 0
-
-        # Calculate the centers of each bin
-        bin_centers = (bins[:-1] + bins[1:]) / 2
-        err_bin_centers = ((bins[1] - bins[0]) / 2) * np.ones(n_bins)  # Half the bin width for error
-
-        # Create a mask for bins where the mean charge is greater than zero
-        positive_charge_mask = mean_charges > 0
-
-        # Apply the mask to all relevant arrays to filter out bins with charge <= 0
-        bin_centers = bin_centers[positive_charge_mask]
-        mean_charges = mean_charges[positive_charge_mask]
-        err_bin_centers = err_bin_centers[positive_charge_mask]
-        err_binned_charges = err_binned_charges[positive_charge_mask]
-
-        #sum in quadrate a systematic error on bin charge
-        err_binned_charges = np.sqrt(err_binned_charges**2 + err_charge_sys**2)
-
-        # Recalculate the range of bins for fitting
-        min_distance, max_distance = bin_centers.min(), bin_centers.max()
-
-        # Create or reset the TH1 histogram of distances
-        if not hasattr(self, 'SigmaDistr'):
-            # If SigmaDistrTH doesn't exist, create a new graph with error bars
-            self.SigmaDistrTH = grapherr(
-                bin_centers, mean_charges, err_bin_centers, err_binned_charges, "Distance(px)", "Charge(ADC)"
-            )
-        else:
-            # Reset the histogram if it already exists
-            self.SigmaDistrTH.Reset()
-
-        # Define the Gaussian plus constant function for fitting
-        fit_function = ROOT.TF1("fit_function", "[0] * TMath::Gaus(x, [1], [2]) +[3]", min_distance, max_distance)
-
-        # Set initial parameters for the fit: amplitude, mean, sigma, and constant
-        fit_function.SetParameters(mean_charges[np.argmin(np.abs(bin_centers))], np.mean(distances), np.std(distances), 0)
-        
-        # Set names for the parameters
-        fit_function.SetParNames("Amplitude", "Mean", "Sigma", "Constant")
-        
-        # Set parameter limits for the fit
-        fit_function.SetParLimits(3, -2, 10)   # Constant offset
-        fit_function.SetParLimits(2, 0, 30)    # Sigma
-        fit_function.SetParLimits(1, -10, 10)  # Mean
-        fit_function.SetParLimits(0, 0, 20)    # Amplitude
-
-        # Initialize variables for the fit parameters and chi-squared value
-        gaus_pars = []
-        offset = 0
+        # Gaussian fit
+        gaus_pars = [0, 0, 0]
         chi2 = 0
 
-        # Perform the fit if the Fit flag is set to True
         if Fit:
-            self.SigmaDistrTH.Fit("fit_function", "RQ")  # Perform the fit with quiet mode
-            # Extract fit parameters: amplitude, mean, sigma
+            fit_function = ROOT.TF1("fit_function", "[0] * TMath::Gaus(x, [1], [2])", hist_range[0], hist_range[1])
+            fit_function.SetParameters(hist.max(), weighted_mean, weighted_std_dev)
+
+            self.SigmaDistrTH.Fit(fit_function, "RQ")
+
             gaus_pars = [fit_function.GetParameter(i) for i in range(3)]
-            # Extract constant offset from the fit
-            offset = fit_function.GetParameter(3)
-            # Calculate reduced chi-squared value if degrees of freedom are not zero
             if fit_function.GetNDF() != 0:
                 chi2 = fit_function.GetChisquare() / fit_function.GetNDF()
 
-        # Store the chi-squared value
         self.chi2 = chi2
 
-        # Return the calculated spread, fit parameters, offset, and chi-squared value
-        return weighted_std_dev, gaus_pars, offset, chi2
+        return weighted_std_dev, gaus_pars, 0, chi2
 
 
-    def GetSigmaAroundBar(self, Srange=100, Fit=True):
+
+
+
+    def GetSigmaAroundBar_old(self, Srange=100, Fit=True):
         """
         Calculate the sigma of the track along the main axis with a cut in the vicinity of the barycenter.
 
@@ -581,6 +517,8 @@ class Track:
         # Ensure there is at least one distance value
         if len(distances) == 0:
             distances.append(0)
+            distances.append(0)
+            charges.append(1)  # Add a default charge to avoid division by zero
             charges.append(1)  # Add a default charge to avoid division by zero
 
         # Calculate the weighted mean of the distances
@@ -641,9 +579,6 @@ class Track:
         err_binned_charges = err_binned_charges[positive_charge_mask]
         #forget this and use percent of the nominal value
         err_binned_charges = err_percent * total_charges
-
-        # Recalculate the range of bins for fitting
-        #min_distance, max_distance = bin_centers.min(), bin_centers.max()
 
         # Create or reset the TH1 histogram of distances
         if not hasattr(self, 'SigmaDistr'):

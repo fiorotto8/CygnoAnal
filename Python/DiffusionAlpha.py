@@ -105,17 +105,21 @@ start_time = time.time()
 file_list = glob(os.path.join(args.inDir, '**', '*'), recursive=True)
 
 ROOT.gROOT.SetBatch(True)
-int_cut =1000
+int_cut =10000
 pressure_folder=extract_number_from_filename(args.inDir)
 if pressure_folder == 500: length_cut,dEdx_cut = 300,70 
 elif pressure_folder == 575: length_cut,dEdx_cut = 300,120
-elif pressure_folder==650: length_cut,dEdx_cut = 200,150
+elif pressure_folder==650: length_cut,dEdx_cut = 200,600
 else: 
     print("Pressure not found")
     sys.exit(1)
 
 output_dir = "Tracks/"
 create_directory(output_dir)
+
+#! #############################
+#file_list=file_list[:1]
+#! #############################
 
 output_file_name = f'output_{args.inDir.replace("/", "")}.root'
 
@@ -187,13 +191,16 @@ for i, file in enumerate(file_list):
                 #! cycle over the superclusers
                 for k in range(nSc_red):
                     if args.verbose: print(f"nSc_red {k}")
-                    if nSc_red > 0 and lengths[k] > 0 and events_arrays["sc_integral"][j][k] > int_cut and events_arrays["sc_length"][j][k] > length_cut and events_arrays["sc_integral"][j][k]/events_arrays["sc_length"][j][k]<dEdx_cut:
+                    #if nSc_red > 0 and lengths[k] > 0 and events_arrays["sc_integral"][j][k] > int_cut and events_arrays["sc_length"][j][k] > length_cut and events_arrays["sc_integral"][j][k]/events_arrays["sc_length"][j][k]<dEdx_cut:
+                    if nSc_red > 0 and lengths[k] > 0 and events_arrays["sc_integral"][j][k] > int_cut and events_arrays["sc_length"][j][k] > length_cut:
+                    #if nSc_red > 0 and lengths[k] > 0 and events_arrays["sc_integral"][j][k] > int_cut and events_arrays["sc_length"][j][k] > length_cut:
                         trk = Analyzer.Track(f"Event_file{i}_image{j}_SC{k}", events_arrays["redpix_ix"][j], events_arrays["redpix_iy"][j], events_arrays["redpix_iz"][j], B[k], E[k])
                         stdCUT,gaus_pars,offset,chi2 = trk.GetSigmaAroundBar()
                         if args.draw: 
                             trk.save_histogram(output_dir)
                             #trk.plot_histogram()
                         # Use the function to append data
+                        #if chi2<20: 
                         append_event_data(event_data, events_arrays, j, k, stdCUT, gaus_pars, offset, chi2,trk.fPhiMainAxis,i)
                         #else: trk.save_histogram(output_dir)
                         del trk
