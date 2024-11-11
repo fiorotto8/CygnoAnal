@@ -10,8 +10,8 @@ import re
 
 # Hard coded value for pixel size in micrometers
 #pixel_size = 64.5  # um
-pixel_size = 1E-4*72.7  # cm
-pixel_size = 1E-4*64.5  # cm
+pixel_size = 1E-4*72  # cm
+#pixel_size = 1E-4*64.5  # cm
 # Function to calculate distance based on hole number in cm
 def distance(hole_num):  # returns in cm
     return (5.4 + 10.6 * hole_num) / 10
@@ -318,7 +318,7 @@ for key in root_file.keys():
     
     # Process the TTree to get branch means and errors
     tree = root_file[tree_name]
-    branch_means, branch_errors = process_ttree(tree,cut="sc_length>300")
+    branch_means, branch_errors = process_ttree(tree,cut="(sc_length>300)")
     
     # Fill the dictionary with mean and error values for each branch
     for branch, mean in branch_means.items():
