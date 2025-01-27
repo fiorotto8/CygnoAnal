@@ -133,6 +133,7 @@ fPhiDir(source.fPhiDir)
   else fLineDirection=(TF1*)source.fLineDirection->Clone("LineDirectioncopy");
 
 }
+
 /**
  * Specialized constructor for creating an Analyzer with a resized track.
  * Does not evaluate the integral in this constructor.
@@ -303,10 +304,11 @@ fLineDirection(nullptr)
 	OriTrack->SaveAs(Form("Tracks/%s.png",Tracklarge->GetName()));
 	delete OriTrack;
 
-	fTrack->Rebin2D(2,2);
+	//fTrack->Rebin2D(2,2);
 }
 
 /**
+ //! Usually this is the standard Constructor for the Analyzer class.
  * Constructor taking the arrays of x, y, z coordinates of the track.
  *
  * @param nometh2 Name for the new histogram.
@@ -338,15 +340,15 @@ fPhiDir(0.),
 fLineDirection(nullptr)
 {
 	fintegral=0.;
-/*
-  // Debugging: Check if B and E are within valid range
+  /*
+  * Debugging: Check if B and E are within valid range
   cout << "Debug Info:" << endl;
   cout << "B (start index): " << B << endl;
   cout << "E (end index): " << E << endl;
   cout << "Number of elements (E-B): " << E-B << endl;
 
-  // Check if B and E are within the bounds of X and Y arrays.
-  // Assuming npix is the size of X and Y arrays. You need to replace npix with the actual size if it's different.
+  * Check if B and E are within the bounds of X and Y arrays.
+  * Assuming npix is the size of X and Y arrays. You need to replace npix with the actual size if it's different.
   cout << "Checking if B and E are within valid range..." << endl;
   if (B < 0 || E > 500000) {
       cout << "Error: B is less than 0 or E is greater than the size of the arrays." << endl;
@@ -354,19 +356,19 @@ fLineDirection(nullptr)
       cout << "Error: E is less than or equal to B, which means the range is invalid." << endl;
   } else {
       cout << "B and E indices appear to be valid." << endl;
-  } */
+  } 
+  */
 
-  ///////  Original version
-  // /*
+  //  Original version
 	fminx = TMath::MinElement(E-B,&X[B]);
 	fmaxx = TMath::MaxElement(E-B,&X[B]);
 	fminy = TMath::MinElement(E-B,&Y[B]);
 	fmaxy = TMath::MaxElement(E-B,&Y[B]);
 
-	fmaxx=fmaxx+30;
-	fminx=fminx-30;
-	fmaxy=fmaxy+30;
-	fminy=fminy-30;
+	fmaxx=fmaxx+10;
+	fminx=fminx-10;
+	fmaxy=fmaxy+10;
+	fminy=fminy-10;
 
 	fnpixelx=fmaxx-fminx;
 	fnpixely=fmaxy-fminy;
@@ -382,9 +384,8 @@ fLineDirection(nullptr)
       fintegral+=Z[i];
     }
 	}
-  // */
   /*
-  ///////   David's version, careful with rotations
+  *   David's version, careful with rotations
 
 	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
 	fminx = 2305 - TMath::MaxElement(E-B,&X[B]);
@@ -409,7 +410,7 @@ fLineDirection(nullptr)
       fintegral+=Z[i];
     }
 	}
- */
+  */
 
 	//fTrack->Rebin2D(2,2);
 	fPhiMainAxis=AngleLineMaxRMS();
@@ -1088,11 +1089,12 @@ void Analyzer::ImpactPoint(const char* nometh2){
 
   fTrackTail = new TH2F(nometh2,nometh2,fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
 
-  fTrackTail->Rebin2D(2,2);
+  //fTrackTail->Rebin2D(2,2);
 
-  Float_t rminN=0.7;
+  Float_t rminN=0.;
+  //Float_t rminN=0.7;
   Double_t X,Y,Z;
-  Int_t NSelPoints;
+  Int_t NSelPoints=0;
   Float_t PointSkew,PointDistCm;
 
   std::vector<float> XIntPointPrev;
@@ -1103,29 +1105,22 @@ void Analyzer::ImpactPoint(const char* nometh2){
   //   rminN+=0.03;
   //   NSelPoints=0;
 
+  // first point is the Barycenter from PCA only
+  Barycenter(fTrack,&fXIPPrev,&fYIPPrev);
+  XIntPointPrev.push_back(fXIPPrev);
+  YIntPointPrev.push_back(fYIPPrev);
+
   // Updated version for speed
   do{
-
-    //v1
-    if(NSelPoints>3000){
-      rminN+=9.0;
-    } else {
+    if(NSelPoints-fNPIP>6*fNPIP){
       rminN+=2.0;
+    } else {
+      //rminN+=2.0;
+      rminN+=.5;
     }
 
-    //v2
-    // if(NSelPoints>800){
-    //   rminN+=9.0;
-    // } else {
-    //   rminN+=3.0;
-    // }
-
-    //v3
-    // if(NSelPoints>4000){
-    //   rminN+=2.0;
-    // } else {
-    //   rminN+=0.5;
-    // }
+    //Original version 
+    //rminN+=0.03;
 
     NSelPoints=0;
 
@@ -1145,19 +1140,28 @@ void Analyzer::ImpactPoint(const char* nometh2){
           fTrackTail->SetBinContent(fTrackTail->GetXaxis()->FindBin(X),fTrackTail->GetYaxis()->FindBin(Y),Z);
           NSelPoints++;
         }//chiudo if selection
+
       }//chiuso for l
     }//chiudo for j (fill histos)
+
 
     Barycenter(fTrackTail,&fXIPPrev,&fYIPPrev);
 
     XIntPointPrev.push_back(fXIPPrev);
     YIntPointPrev.push_back(fYIPPrev);
 
+
   }while(NSelPoints>fNPIP);
 
   Barycenter(fTrackTail,&fXIP,&fYIP);
-  fXIPPrev=XIntPointPrev[(int)(XIntPointPrev.size()/2)];
-  fYIPPrev=YIntPointPrev[(int)(YIntPointPrev.size()/2)];
+
+  int PrevIndex=(int)(XIntPointPrev.size()/2);
+  if ((int)XIntPointPrev.size()<=2){
+    PrevIndex=0;
+  }
+
+  fXIPPrev=XIntPointPrev[PrevIndex];
+  fYIPPrev=YIntPointPrev[PrevIndex];
 
   fIPPlot = new TGraph();
   fIPPlot->SetName("IPPLot");
@@ -1176,7 +1180,7 @@ void Analyzer::ImpactPoint(const char* nometh2){
 void Analyzer::ScaledTrack(const char* nometh2){
 
   fScaledTrack = new TH2F(nometh2,nometh2,fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
-  fScaledTrack->Rebin2D(2,2);
+  //fScaledTrack->Rebin2D(2,2);
 
   double X,Y,Z;
 
@@ -1266,6 +1270,8 @@ void Analyzer::ImprCorrectAngle(){
   }//chiudo esle angolo
 
 }
+
+
 
 /**
  * Identifies the edges of the track along the main axis, useful for profiling and analysis.
@@ -1556,7 +1562,7 @@ void Analyzer::FindPeak(double &xpeak, double &ypeak, double &xpeak_rebin, doubl
   ypeak=fTrack->GetYaxis()->GetBinCenter(y);
 
   TH2F* TrackRebin = (TH2F*)fTrack->Clone();
-  TrackRebin->Rebin2D(2,2);
+  //TrackRebin->Rebin2D(2,2);
   maxbin = TrackRebin->GetMaximumBin();
   TrackRebin->GetBinXYZ(maxbin, x, y, z);
   xpeak_rebin=TrackRebin->GetXaxis()->GetBinCenter(x);

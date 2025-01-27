@@ -17,3 +17,14 @@ Optimized:
 
 - a minimal python implementation of the Analyzer class is in `Analyzer.py`
 - example for ALpha diffusion analysis is in `DiffusionAlpha.py` and a script to aggregate and plot in `plotDiffusion.py`
+
+## Notes:
+
+- Rebinning is deactivated everywhere
+- For MANGO
+  - ApplyThr(10)
+  - RemoveNoise(30)
+  - NPIP=300
+  - wFac=2.
+- For LIME
+  - 

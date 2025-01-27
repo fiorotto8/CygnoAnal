@@ -91,6 +91,8 @@ public:
     inline TF1* GetLineMaxRMS() const  {return fLineMaxRMS;}
     inline double GetXIP() const {return fXIP;}
     inline double GetYIP() const {return fYIP;}
+    inline double GetXIPPrev() const {return fXIPPrev;}
+    inline double GetYIPPrev() const {return fYIPPrev;}
     inline double GetDir() const {return fPhiDir;}
     inline double PDistCm(double X, double Y) const {return sqrt( ( (X-fXbar)*(X-fXbar) + (Y-fYbar)*(Y-fYbar) ));}
 
