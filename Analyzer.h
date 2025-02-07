@@ -112,6 +112,7 @@ public:
 
     void PlotandSavetoFileCOLZ(const char* nometh2);
     void PlotandSavetoFileDirectionalFull(const char* nomepic);
+    void TrackProfilePlotSave(const char* filename);
 
     void Barycenter();
     void Barycenter(TH2F* Tr,double *X, double *Y);
@@ -137,6 +138,10 @@ public:
     // Additional methods and their documentation...
     int Execute_Atul_script(std::string pyvers, std::string inputfile, std::string outfolder, int entries, bool plot=false, bool text=false ) const;
     double GetSigmaAroundBar();
+    bool PileUpCandidate(bool writePNG=false, int counter=0, bool zeroBinPU=false, double skewCut=0, double meanCut=0);
+    void GetTrackProfileStats(double &profileMean, double &profileSkew);
+
+    int Getbinmax();
 
 private:
     // Private member variables

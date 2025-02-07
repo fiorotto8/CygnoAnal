@@ -1271,8 +1271,6 @@ void Analyzer::ImprCorrectAngle(){
 
 }
 
-
-
 /**
  * Identifies the edges of the track along the main axis, useful for profiling and analysis.
  *
@@ -1317,7 +1315,6 @@ void Analyzer::Edges(double &Xl, double &Yl, double &Xr, double &Yr, double slop
 
   return;
 }
-
 
 /**
  * Generates a profile histogram along the main axis or perpendicular to it.
@@ -1364,6 +1361,165 @@ TH1D* Analyzer::FillProfile(bool longitudinal, float x1, float x2)
   }
 
   return TrackProfile;
+}
+
+/**
+ * @brief Calculates the maximum bin value based on the edges and slope.
+ *
+ * This function computes the maximum bin value by first calculating the slope
+ * using the AngleLineMaxRMS function. It then determines the edges using the
+ * Edges function and calculates the distance between these edges. The distance
+ * is then converted to an integer and returned as the maximum bin value.
+ *
+ * @return The maximum bin value as an integer.
+ */
+int Analyzer::Getbinmax()
+{
+  double xl,yl,xr,yr;
+  double slope;
+  double ii=0, jj=0;
+
+  slope =  tan(AngleLineMaxRMS());
+
+  Edges(xl,yl,xr,yr,slope);
+  int binmax = (int)sqrt(pow((xl-xr),2)+pow((yl-yr),2));
+  return binmax;
+}
+
+/**
+ * @brief Determines if a track profile contains zero entries within a specified range.
+ *
+ * This function creates a track profile histogram and checks for zero entries within a reduced range of bins.
+ * The range is defined as the middle 50% of the total bins in the histogram. If any bin within this range has
+ * zero entries, the function returns true, indicating a pile-up candidate.
+ *
+ * @return true if there are zero entries within the specified range of the track profile, false otherwise.
+ */
+bool Analyzer::PileUpCandidate(bool writePNG, int counter, bool zeroBinPU, double skewCut, double meanCut) {
+  TH1D* trackProfile = FillProfile(true);
+
+  double minX = trackProfile->GetXaxis()->GetXmin();
+  double maxX = trackProfile->GetXaxis()->GetXmax();
+  double profileMean = fabs(trackProfile->GetMean()-(maxX-minX)/2);
+  double profileSkew = fabs(trackProfile->GetSkewness());
+
+  bool PUcandiadate = false;
+  int numBin = trackProfile->GetNbinsX();
+  int range = static_cast<int>(0.5 * numBin); // reduce the range to 50% of the total bins
+  int startRange = 1 + static_cast<int>(range / 2);
+  int endRange = numBin - static_cast<int>(range / 2);
+  //cout<<"Track "<<counter<<" event "<<k<<endl;
+  for (int bin = startRange; bin <= endRange; ++bin) {
+      double binContent = trackProfile->GetBinContent(bin);
+      double bincenter = trackProfile->GetBinCenter(bin);
+      //cout<<"bin "<<bin<<" content "<<binContent<<" center "<<bincenter;
+      if (binContent == 0 and zeroBinPU) {
+        PUcandiadate = true;
+        //cout<<" zero entry"<<endl;
+        break;
+      }
+  }
+  if (PUcandiadate == false){
+    if (profileSkew<skewCut && profileMean<meanCut){
+      //cout<<"profileSkew "<<profileSkew<<" profileMean "<<profileMean<<endl;
+      PUcandiadate = true;
+    } 
+  }
+
+  if (writePNG && !PUcandiadate) {
+    TCanvas* c = new TCanvas("c", "c", 2000, 1000);
+    c->Divide(2, 1);
+
+    // Plot TrackProfile on the left
+    c->cd(1);
+    trackProfile->Draw();
+
+    // Plot fTrack with direction on the right
+    c->cd(2);
+    fTrack->Draw("COLZ");
+
+    // Draw a red line with inclination AngleLineMaxRMS
+    double angle = AngleLineMaxRMS();
+    double slope = tan(angle);
+    double intercept = fYbar - slope * fXbar;
+    TLine* line = new TLine(fTrack->GetXaxis()->GetXmin(), slope * fTrack->GetXaxis()->GetXmin() + intercept,
+                            fTrack->GetXaxis()->GetXmax(), slope * fTrack->GetXaxis()->GetXmax() + intercept);
+    line->SetLineColor(kRed);
+    line->Draw("SAME");
+    // Add TLatex for profile mean and skew
+    TLatex latex;
+    latex.SetTextSize(0.03);
+    latex.SetNDC();
+    latex.DrawLatex(0.15, 0.85, Form("Profile Mean: %.2f", profileMean));
+    latex.DrawLatex(0.15, 0.80, Form("Profile Skew: %.2f", profileSkew));
+
+    if (profileSkew<0.3 && profileSkew>-0.3) c->SaveAs(Form("T_smallskew/TrackProfile_%d.png", counter));
+    else c->SaveAs(Form("T_largeskew/TrackProfile_%d.png", counter));
+    delete c;
+    delete line;
+  }
+
+  delete trackProfile;
+
+  return PUcandiadate;
+}
+
+/**
+ * Generates a profile histogram along the main axis, calculates its mean and skewness.
+ *
+ * @param profileMean Reference to a double to store the calculated mean of the profile.
+ * @param profileSkew Reference to a double to store the calculated skewness of the profile.
+ */
+void Analyzer::GetTrackProfileStats(double &profileMean, double &profileSkew) {
+  TH1D* trackProfile = FillProfile(true);
+
+  double minX = trackProfile->GetXaxis()->GetXmin();
+  double maxX = trackProfile->GetXaxis()->GetXmax();
+  profileMean = trackProfile->GetMean() - (maxX - minX) / 2;
+  profileSkew = trackProfile->GetSkewness();
+
+  delete trackProfile;
+}
+
+/**
+ * Plots and saves a combined image with two canvases: 
+ * on the right, the fTrack with the direction on top, 
+ * and on the left, the TrackProfile TH1D.
+ *
+ * @param filename The name of the file to save the image as.
+ */
+void Analyzer::TrackProfilePlotSave(const char* filename) {
+  // Create a new canvas
+  TCanvas* combinedCanvas = new TCanvas("combinedCanvas", "Combined Canvas", 2000, 1000);
+  combinedCanvas->Divide(2, 1);
+
+  // Plot fTrack with direction on the right
+  combinedCanvas->cd(2);
+  fTrack->Draw("COLZ");
+  fLineMaxRMS->Draw("SAME");
+
+  // Plot TrackProfile on the left
+  combinedCanvas->cd(1);
+  TH1D* trackProfile = FillProfile(true);
+  trackProfile->Draw();
+
+  double minX = trackProfile->GetXaxis()->GetXmin();
+  double maxX = trackProfile->GetXaxis()->GetXmax();
+  double profileMean = fabs(trackProfile->GetMean()-(maxX-minX)/2);
+  double profileSkew = fabs(trackProfile->GetSkewness());
+  // Add TLatex for profile mean and skew
+  TLatex latex;
+  latex.SetTextSize(0.03);
+  latex.SetNDC();
+  latex.DrawLatex(0.15, 0.85, Form("Profile Skew: %.2f", profileSkew));
+  latex.DrawLatex(0.15, 0.80, Form("Profile Mean: %.2f", profileMean));
+
+  // Save the canvas as a PNG file
+  combinedCanvas->SaveAs(Form("%s.png", filename));
+
+  // Clean up
+  delete combinedCanvas;
+  delete trackProfile;
 }
 
 /**

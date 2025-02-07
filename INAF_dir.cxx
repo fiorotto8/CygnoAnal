@@ -22,7 +22,6 @@
 #include <chrono>
 #include <cmath>  // for M_PI
 
-
 using namespace std;
 
 /*old
@@ -198,6 +197,8 @@ int main(int argc, char** argv){
   double xl=0, yl=0, xr=0, yr=0;
   double reco_theta=0, x_mean=0, y_mean=0, x_min=0, x_max=0, y_min=0, y_max=0;
   int procTime=0;
+  double profileMean=0, profileSkew=0; 
+  bool puCandidate=false;
 
   //impact point and directionality
   //Int_t NPIP=300;
@@ -254,6 +255,9 @@ int main(int argc, char** argv){
   out_tree->Branch("XBar",&xbar);
   out_tree->Branch("YBar",&ybar);
   out_tree->Branch("procTime",&procTime);
+  out_tree->Branch("ProfileMean",&profileMean);
+  out_tree->Branch("ProfileSkew",&profileSkew);
+  out_tree->Branch("PileUpCandidate",&puCandidate);
   /*
   out_tree->Branch("Npeaks",&npeaks);
   out_tree->Branch("PeakDensity",&peak_density);
@@ -272,10 +276,12 @@ int main(int argc, char** argv){
   out_tree->Branch("phi_HT_integral",&phi_HT_integral);
   */
 
+  int pileUpCounter=0;
   cout<<"this run has "<<tree->GetEntries()<<" entries"<<endl;
-  for(int k=0;k<tree->GetEntries();k++)
+  for(int k=100000;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
+  //for(int k=100000;k<110000;k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=0;k<10000;k++)
-  //for(int k=0;k<1;k++)
+  //for(int k=0;k<26;k++)
   {
     //cout<<"Entry "<<k<<endl;
     sc_redpixID.clear();
@@ -308,24 +314,29 @@ int main(int argc, char** argv){
       pixcounter += EndScPix[i] - BeginScPix[i];
       //cout<<"counted pix: "<<pixcounter<<endl;
 
-      // Condition to filter out certain events based on physical properties
+      //! Condition to filter out certain events based on physical properties
       //For Polarized 8Kev photon in MANGO
-      //if(scint>25000 && scint<45000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 )
-      //For Polarized 8Kev photon in MANGO
-      if( x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && scint<82000 && scint>61000 && sc_npix<6000 )
+      //if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && run>22700)
+      if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>1000 && x_mean<1100 && y_mean<1100 && y_mean>1000 && run>22700)
+      //For Polarized 17Kev photon in MANGO
+      //if( x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && scint<90000 && scint>60000 && sc_npix<6000  && run>22700)
       // For LIME 55Fe
       //if (y_max < 1250 && y_min > 1050 && x_max < 1250 && x_min > 1050 && scint>2000 && reco_sc_rms>5 && reco_sc_tgausssigma>2.63 && reco_sc_tgausssigma<4.5 && recowidth/recolength>0.6 )
       {
-        // Start timers for each step
+        // Start timers for the entire track processing
         auto t0 = std::chrono::high_resolution_clock::now();
 
-        Analyzer Traccia(Form("Track%i_event%i_run%i", counter, k, run),
+        // Analyzer constructor
+        Analyzer Traccia(Form("Track%i_event%i_run%i_entry%i", counter, k, run,k),
                         XPix.data(), YPix.data(), ZPix.data(),
                         BeginScPix[i], EndScPix[i]);
+
+        if (Traccia.Getbinmax()<=0) continue; //skip if the track is empty
+
         auto t1 = std::chrono::high_resolution_clock::now();
 
         // (We skip timing SetWScal and SetNPIP now, or just ignore them in the printout)
-        Traccia.SetWScal(2.);
+        Traccia.SetWScal(1.);
         Traccia.SetNPIP(300);
 
         // ApplyThr
@@ -335,6 +346,14 @@ int main(int argc, char** argv){
         // RemoveNoise
         Traccia.RemoveNoise(30);
         auto t5 = std::chrono::high_resolution_clock::now();
+
+        // Check for pile-up (i.e., Traccia.PileUpCandidate())
+        auto t5_pileup_start = std::chrono::high_resolution_clock::now();
+        //puCandidate = Traccia.PileUpCandidate(false, counter, true, 0.2, 2.0); //for 17keV
+        puCandidate = Traccia.PileUpCandidate(false, counter, false, 0.,0.); //for 8keV
+        auto t5_pileup_end   = std::chrono::high_resolution_clock::now();
+
+        Traccia.GetTrackProfileStats(profileMean, profileSkew);
 
         // ImpactPoint
         Traccia.ImpactPoint(Form("TrackIPRegion%i_run%i_evt%i", k, run, counter));
@@ -348,7 +367,7 @@ int main(int argc, char** argv){
         Traccia.Direction();
         auto t8 = std::chrono::high_resolution_clock::now();
 
-        // ImprCorrectAngle (we skip this in printout, so no new timer needed)
+        // ImprCorrectAngle (skipped in timing printout)
         Traccia.ImprCorrectAngle();
 
         // BuildLineDirection
@@ -367,66 +386,58 @@ int main(int argc, char** argv){
         // End timing for the entire block
         auto tEnd = std::chrono::high_resolution_clock::now();
 
-        // Print times only every 10k events
-        if (k % 10000 == 0)
+        if (puCandidate) {
+          pileUpCounter++;
+          //Traccia.TrackProfilePlotSave(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
+          continue;
+        }
+
+        //! Print only every N events
+        if (k % 1000 == 0)
         {
             // Save a diagnostic image
-            Traccia.SavePicDir(Form("Track%i_event%i_run%i.png", counter, event, run));
+            if (fabs(phi_DIR_deg) < 25. || fabs(phi_DIR_deg) > 150.){
+            Traccia.SavePicDir(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
+            }
 
-            std::cout << "Processing entry " 
-                      << k << " / " << tree->GetEntries() << std::endl;
+            std::cout << "Processing entry " << k << " / " << tree->GetEntries() << std::endl;
+            std::cout << "counter: " << counter << std::endl;
+            std::cout << "XIP: " << xIP << "  YIP: " << yIP << std::endl;
+            std::cout << "XIPPrev: " << Traccia.GetXIPPrev() << "  YIPPrev: " << Traccia.GetYIPPrev() << std::endl;
+            std::cout << "Degree: " << phi_DIR_deg << "  tan(angle): " << std::tan(phi_DIR) << std::endl;
 
+            // Compute durations in microseconds
+            long long dt_ctor = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
+            long long dt_applyThr = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t1).count();
+            long long dt_removeNoise = std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count();
+            long long dt_pileUpCandidate = std::chrono::duration_cast<std::chrono::microseconds>(t5_pileup_end - t5_pileup_start).count();
+            long long dt_impactPoint = std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5_pileup_end).count();
+            long long dt_scaledTrack = std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
+            long long dt_direction   = std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
+            long long dt_buildLineDirection = std::chrono::duration_cast<std::chrono::microseconds>(t10 - t8).count();
+            long long dt_total = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
 
-            cout<<"counter: "<<counter<<endl;
-            cout<<"XIP: "<<xIP<<" YIP: "<<yIP<<endl;
-            cout<<"XIPPrev: "<<Traccia.GetXIPPrev()<<" YIPPrev: "<<Traccia.GetYIPPrev()<<endl;
-            cout<<" Degree: "<<phi_DIR_deg<<" tan angle: "<<tan(phi_DIR)<<endl;
-
-
-            // ---------------------------------------------------------------------
-            // (1) Compute dudrations in microseconds
-            // ---------------------------------------------------------------------
-            auto dt_ctor           = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
-            auto dt_applyThr       = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t1).count(); 
-            //  ^ note: "t3" was SetNPIP, which we don't print, so you might prefer (t4 - t0) minus something, 
-            //    or specifically measure (t4 - <endOfSetNPIP>), etc. 
-            //    But for clarity, let's keep as-is and accept that part includes SetNPIP if there's no t3 timing.
-            //    If you'd like a true "ApplyThr only" measurement, put a time point *right before* ApplyThr.
-            
-            auto dt_removeNoise    = std::chrono::duration_cast<std::chrono::microseconds>(t5 - t4).count();
-            auto dt_impactPoint    = std::chrono::duration_cast<std::chrono::microseconds>(t6 - t5).count();
-            auto dt_scaledTrack    = std::chrono::duration_cast<std::chrono::microseconds>(t7 - t6).count();
-            auto dt_direction      = std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
-            auto dt_buildDirection = std::chrono::duration_cast<std::chrono::microseconds>(t10 - t8).count(); 
-            //  ^ "t9" is ImprCorrectAngle's start, which we aren't showing, 
-            //    so you might want to measure (t10 - t8) to *combine* Direction + ImprCorrectAngle + BuildLineDirection, 
-            //    or add an extra time-point right after ImprCorrectAngle if you want a pure BuildLineDirection measure.
-
-            auto dt_total = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
-
-            // ---------------------------------------------------------------------
-            // (2) Print each as "us" and as "% of total"
-            // ---------------------------------------------------------------------
-            // We'll define a helper lambda to keep code clean:
+            // Print each as "us" and as "% of total"
             auto printTime = [&](const char* label, long long dt) {
                 double pct = 100.0 * (double)dt / (double)dt_total;
                 std::cout << label << dt << " us (" << pct << " %)\n";
             };
 
-            printTime("Time Analyzer ctor:       ", dt_ctor);
-            printTime("Time ApplyThr:            ", dt_applyThr);
-            printTime("Time RemoveNoise:         ", dt_removeNoise);
-            printTime("Time ImpactPoint:         ", dt_impactPoint);
-            printTime("Time ScaledTrack:         ", dt_scaledTrack);
-            printTime("Time Direction:           ", dt_direction);
-            printTime("Time BuildLineDirection:  ", dt_buildDirection);
+            printTime("Time Analyzer ctor:         ", dt_ctor);
+            printTime("Time ApplyThr:              ", dt_applyThr);
+            printTime("Time RemoveNoise:           ", dt_removeNoise);
+            printTime("Time PileUpCandidate:       ", dt_pileUpCandidate);
+            printTime("Time ImpactPoint:           ", dt_impactPoint);
+            printTime("Time ScaledTrack:           ", dt_scaledTrack);
+            printTime("Time Direction:             ", dt_direction);
+            printTime("Time BuildLineDirection:    ", dt_buildLineDirection);
 
             // Lastly, the total is always 100%
-            std::cout << "TOTAL time for all steps: "
-                      << dt_total << " us (100%)\n" << std::endl;
+            std::cout << "TOTAL time for all steps: " << dt_total << " us (100%)\n\n";
         }
 
-        procTime=std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
+        // Fill the tree with the total time for this event
+        procTime = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
         out_tree->Fill();
       }
     counter++;
@@ -437,5 +448,7 @@ int main(int argc, char** argv){
   }//ttree entries
   out_tree->Write();
   fout->Close();
+  cout<<"pile up percentage: "<<(double)pileUpCounter/(double)counter<<endl;
+
   return 0;
 }
