@@ -16,15 +16,14 @@ Optimized:
 ## Python version
 
 - a minimal python implementation of the Analyzer class is in `Analyzer.py`
-- example for ALpha diffusion analysis is in `DiffusionAlpha.py` and a script to aggregate and plot in `plotDiffusion.py`
+- example for Alpha diffusion analysis is in `DiffusionAlpha.py` and a script to aggregate and plot in `plotDiffusion.py`
 
-## Notes:
+## Notes
 
 - Rebinning is deactivated everywhere
-- For MANGO
+- For MANGO He/CF4 fusion
   - ApplyThr(10)
   - RemoveNoise(30)
-  - NPIP=300
+  - NPIP=250
   - wFac=2.
-- For LIME
-  - 
+  - For 17keV PileUpCandidate(false, counter, true, 0.2, 2.0)
