@@ -21,6 +21,8 @@
 #include <TLegendEntry.h>
 #include <chrono>
 #include <cmath>  // for M_PI
+#include <fstream>
+#include <filesystem>
 
 using namespace std;
 
@@ -94,8 +96,16 @@ int closest_divisor(int A, float B){
   auto result = min_element(div_dist.begin(), div_dist.end());
   return div_candidate[result-div_dist.begin()];
 }
-
 int main(int argc, char** argv){
+  if (argc < 6) {
+    std::cerr << "Usage: " << argv[0] << " <path_to_rootfile> <output_directory> <NPIP> <wfactor> <threshold> <remove_noise_value>" << std::endl;
+    return 1;
+  }
+
+  int NPIP = std::stoi(argv[3]);
+  double wfactor = std::stod(argv[4]);
+  int threshold = std::stoi(argv[5]);
+  int remove_noise_value = std::stoi(argv[6]);
 
 // Open the input ROOT file and get the "Events" TTree
   TFile* f = TFile::Open(Form("%s",argv[1]));
@@ -278,10 +288,10 @@ int main(int argc, char** argv){
 
   int pileUpCounter=0;
   cout<<"this run has "<<tree->GetEntries()<<" entries"<<endl;
-  for(int k=100000;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
+  //for(int k=0;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=100000;k<110000;k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=0;k<10000;k++)
-  //for(int k=0;k<26;k++)
+  for(int k=0;k<1000;k++)
   {
     //cout<<"Entry "<<k<<endl;
     sc_redpixID.clear();
@@ -317,9 +327,11 @@ int main(int argc, char** argv){
       //! Condition to filter out certain events based on physical properties
       //For Polarized 8Kev photon in MANGO
       //if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && run>22700)
-      if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>1000 && x_mean<1100 && y_mean<1100 && y_mean>1000 && run>22700)
-      //For Polarized 17Kev photon in MANGO
+      //if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>950 && x_mean<1050 && y_mean<950 && y_mean>1050 && run>22700)
+      //For Polarized 17Kev photon in MANGO FUSION He/CF4
       //if( x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && scint<90000 && scint>60000 && sc_npix<6000  && run>22700)
+      //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4
+      if( x_mean>1800 && x_mean<2000 && y_mean<1150 && y_mean>950 && scint<40000 && scint>29000)
       // For LIME 55Fe
       //if (y_max < 1250 && y_min > 1050 && x_max < 1250 && x_min > 1050 && scint>2000 && reco_sc_rms>5 && reco_sc_tgausssigma>2.63 && reco_sc_tgausssigma<4.5 && recowidth/recolength>0.6 )
       {
@@ -336,15 +348,17 @@ int main(int argc, char** argv){
         auto t1 = std::chrono::high_resolution_clock::now();
 
         // (We skip timing SetWScal and SetNPIP now, or just ignore them in the printout)
-        Traccia.SetWScal(1.);
-        Traccia.SetNPIP(300);
+        Traccia.SetWScal(wfactor);
+        Traccia.SetNPIP(NPIP);
 
         // ApplyThr
-        Traccia.ApplyThr(10);
+        //Traccia.ApplyThr(10);// He/CF4 fusion
+        Traccia.ApplyThr(threshold);
         auto t4 = std::chrono::high_resolution_clock::now();
 
         // RemoveNoise
-        Traccia.RemoveNoise(30);
+        //Traccia.RemoveNoise(30);// He/CF4 fusion
+        Traccia.RemoveNoise(remove_noise_value);
         auto t5 = std::chrono::high_resolution_clock::now();
 
         // Check for pile-up (i.e., Traccia.PileUpCandidate())
@@ -393,7 +407,7 @@ int main(int argc, char** argv){
         }
 
         //! Print only every N events
-        if (k % 1000 == 0)
+        if (k % 100 == 0)
         {
             // Save a diagnostic image
             if (fabs(phi_DIR_deg) < 25. || fabs(phi_DIR_deg) > 150.){
@@ -449,6 +463,25 @@ int main(int argc, char** argv){
   out_tree->Write();
   fout->Close();
   cout<<"pile up percentage: "<<(double)pileUpCounter/(double)counter<<endl;
+
+
+  std::string outputTxtPath = outputDir + "/output.txt";
+
+  // Check if the file exists, if not create it
+  if (!std::filesystem::exists(outputTxtPath)) {
+    std::ofstream outfile(outputTxtPath);
+    outfile.close();
+  }
+
+  // Open the file in append mode and write the values
+  std::ofstream outfile(outputTxtPath, std::ios::app);
+  if (outfile.is_open()) {
+    outfile << NPIP << ";" << wfactor << ";" << threshold << ";" << remove_noise_value << ";";
+    outfile.close();
+  } else {
+    std::cerr << "Error: Unable to open file " << outputTxtPath << std::endl;
+  }
+
 
   return 0;
 }

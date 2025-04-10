@@ -2,6 +2,7 @@ import uproot
 import numpy as np
 import ROOT
 import argparse
+import os
 
 def hist(data, x_name, channels=100, linecolor=4, linewidth=4,write=True,save=False):
     # Convert list directly to numpy array to avoid redundant loop
@@ -36,6 +37,7 @@ def grapherr(x,y,ex,ey,x_string, y_string,name=None, color=4, markerstyle=22, ma
 parser = argparse.ArgumentParser(description="Fit modulation data from a ROOT file.")
 parser.add_argument("--energy", type=float, default=17.0, help="Energy value for the photoelectron direction distribution.")
 parser.add_argument("--file", type=str, default="Analysis_reco_Pol_Fusion.root", help="Path to the ROOT file.")
+parser.add_argument("--draw", action="store_true", help="Flag to draw the histograms.",default=False)
 args = parser.parse_args()
 
 name = f"{args.energy}keV photoelectron"
@@ -76,6 +78,11 @@ goodEvents = fit_func_energy.Integral(xmin, xmax)
 allEvents = pileUp + goodEvents
 pileUpFraction=pileUp/allEvents
 
+# Get the bin with the largest number of entries
+max_bin = histoEnergy.GetMaximumBin()
+ymax = histoEnergy.GetBinContent(max_bin)
+histoEnergy.GetYaxis().SetRangeUser(0, ymax*1.5)
+
 # Draw the fit function on the histogram
 fit_func_energy.Draw("same")
 canvas = ROOT.TCanvas(name+" Energy spectrum", name+" Energy spectrum", 1000, 1000)
@@ -92,15 +99,16 @@ latex.SetTextColor(4)
 #latex.DrawLatex(0.15, 0.35, f"Good Events: {goodEvents:.0f}")
 #latex.DrawLatex(0.15, 0.3, f"Pile Up Events: {pileUp:.0f}")
 #latex.DrawLatex(0.15, 0.25, f"All events: {histoEnergy.GetEntries():.0f}")
-latex.DrawLatex(0.15, 0.25, f"Resolution(%): {100*EnResolution:.1f}")
-latex.DrawLatex(0.15, 0.2, f"Background Fraction: {pileUpFraction*100:.2f}%")
-latex.DrawLatex(0.15, 0.15, f"Expected Background Fraction: 25%")
+latex.DrawLatex(0.15, 0.85, f"Resolution(%): {100*EnResolution:.1f}")
+latex.DrawLatex(0.15, 0.8, f"Background Fraction: {pileUpFraction*100:.2f}%")
+latex.DrawLatex(0.15, 0.75, f"Expected Background Fraction: 25%")
+latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func_energy.GetChisquare()/fit_func_energy.GetNDF():.1f}")
 
 canvas.Update()
-canvas.SaveAs(f"Energy_{args.energy}.png")
+if args.draw is True: canvas.SaveAs(f"Energy_{args.energy}.png")
 
 #! define histogram for directions
-histo=hist(directions,name,write=False)
+histo=hist(directions,name,channels=200,write=False)
 # Define the fitting function
 fit_func = ROOT.TF1("fit_func", "[0] + [1]*cos((x - [2])*3.14159/180)**2", -180, 180)
 fit_func.SetParameters(250, 150, 90)
@@ -115,13 +123,34 @@ histo.Draw()
 # Add statistics box to the canvas
 #ROOT.gStyle.SetOptFit(1111)
 
+# Get the bin with the largest number of entries
+max_bin = histo.GetMaximumBin()
+ymax = histo.GetBinContent(max_bin)
+histo.GetYaxis().SetRangeUser(0, ymax*1.8)
+
+
 # Create TPaveText to display the modulation factor
-latex.DrawLatex(0.15, 0.22, f"Modulation Factor: {PolDegree/0.75:.3f}")
-latex.DrawLatex(0.15, 0.17, f"Purity of the line: 75%")
-latex.DrawLatex(0.15, 0.12, "Fitting Function: [0] + [1]*cos^2((x - [2]))")
+latex.DrawLatex(0.15, 0.85, f"Modulation Factor: {PolDegree/0.75:.3f}")
+latex.DrawLatex(0.15, 0.8, f"Purity of the line: 75%")
+latex.DrawLatex(0.15, 0.75, "Fitting Function: [0] + [1]*cos^2((x - [2]))")
+latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func.GetChisquare()/fit_func.GetNDF():.1f}")
+latex.DrawLatex(0.15, 0.65, f"Phase (deg): {fit_func.GetParameter(2):.1f}")
+
 
 canvas1.Update()
 
-canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
+if args.draw is True: canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
 
+output_file = "output.txt"
+modulation_factor = PolDegree / 0.75
+reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
+
+# Check if the file exists, if not create it
+if not os.path.exists(output_file):
+    with open(output_file, "w") as f:
+        pass
+
+# Append the modulation factor and reduced chi2 to the file
+with open(output_file, "a") as f:
+    f.write(f"{modulation_factor:.3f};{reduced_chi2:.3f}\n")
 

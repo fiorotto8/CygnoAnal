@@ -1,0 +1,10 @@
+universe = vanilla
+executable = run_INAF.sh
+arguments = Reco/ArCF4_0deg.root output/output_$(arg1)_$(arg2)_$(arg3)_$(arg4) $(arg1) $(arg2) $(arg3) $(arg4)
+output = logs/job_$(arg1)_$(arg2)_$(arg3)_$(arg4).out
+error  = logs/job_$(arg1)_$(arg2)_$(arg3)_$(arg4).err
+log    = logs/job_$(arg1)_$(arg2)_$(arg3)_$(arg4).log
+request_cpus = 1
+request_memory = 1GB
+
+queue arg1,arg2,arg3,arg4 from params.txt
