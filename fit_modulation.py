@@ -38,6 +38,7 @@ parser = argparse.ArgumentParser(description="Fit modulation data from a ROOT fi
 parser.add_argument("--energy", type=float, default=17.0, help="Energy value for the photoelectron direction distribution.")
 parser.add_argument("--file", type=str, default="Analysis_reco_Pol_Fusion.root", help="Path to the ROOT file.")
 parser.add_argument("--draw", action="store_true", help="Flag to draw the histograms.",default=False)
+parser.add_argument("--run", help="append to ouput name",default=None)
 args = parser.parse_args()
 
 name = f"{args.energy}keV photoelectron"
@@ -133,7 +134,7 @@ histo.GetYaxis().SetRangeUser(0, ymax*1.8)
 latex.DrawLatex(0.15, 0.85, f"Modulation Factor: {PolDegree/0.75:.3f}")
 latex.DrawLatex(0.15, 0.8, f"Purity of the line: 75%")
 latex.DrawLatex(0.15, 0.75, "Fitting Function: [0] + [1]*cos^2((x - [2]))")
-latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func.GetChisquare()/fit_func.GetNDF():.1f}")
+if fit_func.GetNDF()!=0: latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func.GetChisquare()/fit_func.GetNDF():.1f}")
 latex.DrawLatex(0.15, 0.65, f"Phase (deg): {fit_func.GetParameter(2):.1f}")
 
 
@@ -141,9 +142,11 @@ canvas1.Update()
 
 if args.draw is True: canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
 
-output_file = "output.txt"
+if args.run is None: output_file = "output.txt"
+else: output_file = f"output_{args.run}.txt"
 modulation_factor = PolDegree / 0.75
-reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
+if fit_func.GetNDF()!=0: reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
+else: reduced_chi2=0
 
 # Check if the file exists, if not create it
 if not os.path.exists(output_file):

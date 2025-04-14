@@ -288,10 +288,10 @@ int main(int argc, char** argv){
 
   int pileUpCounter=0;
   cout<<"this run has "<<tree->GetEntries()<<" entries"<<endl;
-  //for(int k=0;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
+  for(int k=0;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=100000;k<110000;k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=0;k<10000;k++)
-  for(int k=0;k<1000;k++)
+  //for(int k=0;k<1000;k++)
   {
     //cout<<"Entry "<<k<<endl;
     sc_redpixID.clear();
@@ -407,7 +407,7 @@ int main(int argc, char** argv){
         }
 
         //! Print only every N events
-        if (k % 100 == 0)
+        if (k % 1000000000000 == 0)
         {
             // Save a diagnostic image
             if (fabs(phi_DIR_deg) < 25. || fabs(phi_DIR_deg) > 150.){
@@ -463,25 +463,6 @@ int main(int argc, char** argv){
   out_tree->Write();
   fout->Close();
   cout<<"pile up percentage: "<<(double)pileUpCounter/(double)counter<<endl;
-
-
-  std::string outputTxtPath = outputDir + "/output.txt";
-
-  // Check if the file exists, if not create it
-  if (!std::filesystem::exists(outputTxtPath)) {
-    std::ofstream outfile(outputTxtPath);
-    outfile.close();
-  }
-
-  // Open the file in append mode and write the values
-  std::ofstream outfile(outputTxtPath, std::ios::app);
-  if (outfile.is_open()) {
-    outfile << NPIP << ";" << wfactor << ";" << threshold << ";" << remove_noise_value << ";";
-    outfile.close();
-  } else {
-    std::cerr << "Error: Unable to open file " << outputTxtPath << std::endl;
-  }
-
 
   return 0;
 }
