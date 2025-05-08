@@ -174,8 +174,16 @@ int main(int argc, char** argv){
   tree->SetBranchAddress("sc_redpixIdx",sc_redpixID.data());
   //tree->SetBranchAddress("sc_size",&sc_npix);
   tree->SetBranchAddress("nRedpix",&Nredpix);
+  
+  
   tree->SetBranchAddress("redpix_ix",YPix.data());
   tree->SetBranchAddress("redpix_iy",XPix.data());
+  //tree->SetBranchAddress("redpix_ix",XPix.data());
+  //tree->SetBranchAddress("redpix_iy",YPix.data());
+
+
+
+
   tree->SetBranchAddress("redpix_iz",ZPix.data());
   tree->SetBranchAddress("sc_width",width.data());
   tree->SetBranchAddress("sc_length",length.data());
@@ -330,8 +338,10 @@ int main(int argc, char** argv){
       //if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>950 && x_mean<1050 && y_mean<950 && y_mean>1050 && run>22700)
       //For Polarized 17Kev photon in MANGO FUSION He/CF4
       //if( x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && scint<90000 && scint>60000 && sc_npix<6000  && run>22700)
-      //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4
-      if( x_mean>1800 && x_mean<2000 && y_mean<1150 && y_mean>950 && scint<40000 && scint>29000)
+      //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4 0deg
+      if( x_mean>1800 && x_mean<2000 && y_mean<1150 && y_mean>950 && scint<39000 && scint>28000)
+      //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4 90deg
+      //if( x_mean>1800 && x_mean<2000 && y_mean<1125 && y_mean>925 && scint<36000 && scint>26000)
       // For LIME 55Fe
       //if (y_max < 1250 && y_min > 1050 && x_max < 1250 && x_min > 1050 && scint>2000 && reco_sc_rms>5 && reco_sc_tgausssigma>2.63 && reco_sc_tgausssigma<4.5 && recowidth/recolength>0.6 )
       {
@@ -340,8 +350,8 @@ int main(int argc, char** argv){
 
         // Analyzer constructor
         Analyzer Traccia(Form("Track%i_event%i_run%i_entry%i", counter, k, run,k),
-                        XPix.data(), YPix.data(), ZPix.data(),
-                        BeginScPix[i], EndScPix[i]);
+            XPix.data(), YPix.data(), ZPix.data(),
+            BeginScPix[i], EndScPix[i],true);
 
         if (Traccia.Getbinmax()<=0) continue; //skip if the track is empty
 
@@ -407,7 +417,7 @@ int main(int argc, char** argv){
         }
 
         //! Print only every N events
-        if (k % 1000000000000 == 0)
+        if (k % 100 == 0)
         {
             // Save a diagnostic image
             if (fabs(phi_DIR_deg) < 25. || fabs(phi_DIR_deg) > 150.){

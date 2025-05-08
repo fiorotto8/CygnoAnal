@@ -20,3 +20,10 @@ INAF
 *exposure*
 min_param.py
 condor*
+DirScan*
+params.txt
+output*
+run_*
+params*
+generate_combinations.py
+fit_modulation.py

@@ -318,8 +318,9 @@ fLineDirection(nullptr)
  * @param B Start index for the track hits.
  * @param E End index for the track hits.
  */
-Analyzer::Analyzer(const char* nometh2, int* X, int* Y, float* Z, int B, int E):
-// Initialization list and constructor logicfradius(0.),
+Analyzer::Analyzer(const char* nometh2, int* X, int* Y, float* Z, int B, int E, bool useRebin = false):
+// Initialization list and constructor logic
+fradius(0.),
 fRange(0.),
 fheight(0.),
 fxcentr(0),
@@ -339,84 +340,39 @@ fIPPlot(nullptr),
 fPhiDir(0.),
 fLineDirection(nullptr)
 {
-	fintegral=0.;
-  /*
-  * Debugging: Check if B and E are within valid range
-  cout << "Debug Info:" << endl;
-  cout << "B (start index): " << B << endl;
-  cout << "E (end index): " << E << endl;
-  cout << "Number of elements (E-B): " << E-B << endl;
+  fintegral=0.;
 
-  * Check if B and E are within the bounds of X and Y arrays.
-  * Assuming npix is the size of X and Y arrays. You need to replace npix with the actual size if it's different.
-  cout << "Checking if B and E are within valid range..." << endl;
-  if (B < 0 || E > 500000) {
-      cout << "Error: B is less than 0 or E is greater than the size of the arrays." << endl;
-  } else if (E <= B) {
-      cout << "Error: E is less than or equal to B, which means the range is invalid." << endl;
-  } else {
-      cout << "B and E indices appear to be valid." << endl;
-  } 
-  */
+  fminx = TMath::MinElement(E-B,&X[B]);
+  fmaxx = TMath::MaxElement(E-B,&X[B]);
+  fminy = TMath::MinElement(E-B,&Y[B]);
+  fmaxy = TMath::MaxElement(E-B,&Y[B]);
 
-  //  Original version
-	fminx = TMath::MinElement(E-B,&X[B]);
-	fmaxx = TMath::MaxElement(E-B,&X[B]);
-	fminy = TMath::MinElement(E-B,&Y[B]);
-	fmaxy = TMath::MaxElement(E-B,&Y[B]);
-
-	fmaxx=fmaxx+10;
-	fminx=fminx-10;
-	fmaxy=fmaxy+10;
-	fminy=fminy-10;
-
-	fnpixelx=fmaxx-fminx;
-	fnpixely=fmaxy-fminy;
-
-	//std::cout << fnpixelx<<"\t"<<fminx <<"\t"<< fmaxx << "\t" << fnpixely <<"\t"<< fminy <<"\t"<< fmaxy << std::endl;
-
-	fTrack=new TH2F(Form("A%s",nometh2),Form("A%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
-	for(int i=B;i<E;i++) {
-    
-    if (Z[i]>0) {
-      
-      fTrack->SetBinContent(fTrack->GetXaxis()->FindBin(X[i]),fTrack->GetYaxis()->FindBin(Y[i]),Z[i]);
-      fintegral+=Z[i];
-    }
-	}
-  /*
-  *   David's version, careful with rotations
-
-	fmaxx = 2305 - TMath::MinElement(E-B,&X[B]);
-	fminx = 2305 - TMath::MaxElement(E-B,&X[B]);
-	fmaxy = 2305 - TMath::MinElement(E-B,&Y[B]);
-	fminy = 2305 - TMath::MaxElement(E-B,&Y[B]);
-
-  fmaxx=fmaxx+30;
-	fminx=fminx-30;
-	fmaxy=fmaxy+30;
-	fminy=fminy-30;
+  fmaxx=fmaxx+10;
+  fminx=fminx-10;
+  fmaxy=fmaxy+10;
+  fminy=fminy-10;
 
   fnpixelx=fmaxx-fminx;
-	fnpixely=fmaxy-fminy;
+  fnpixely=fmaxy-fminy;
 
-  fTrack=new TH2F(Form("%s",nometh2),Form("%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
+  fTrack=new TH2F(Form("A%s",nometh2),Form("A%s",nometh2),fnpixelx,fminx,fmaxx,fnpixely,fminy,fmaxy);
+  for(int i=B;i<E;i++) {
+  
+  if (Z[i]>0) {
+    
+    fTrack->SetBinContent(fTrack->GetXaxis()->FindBin(X[i]),fTrack->GetYaxis()->FindBin(Y[i]),Z[i]);
+    fintegral+=Z[i];
+  }
+  }
 
-	for(int i=B;i<E;i++){
+  if (useRebin) {
+    fTrack->Rebin2D(2,2);
+  }
 
-    if (Z[i]>0) {
-      
-      fTrack->SetBinContent(fTrack->GetXaxis()->FindBin( 2305 - X[i]),fTrack->GetYaxis()->FindBin( 2305 - Y[i]),Z[i]); // cahnge david (rotation)
-      fintegral+=Z[i];
-    }
-	}
-  */
-
-	//fTrack->Rebin2D(2,2);
-	fPhiMainAxis=AngleLineMaxRMS();
-	BuildLineMaxRMS();
-	fRMSOnMainAxis=GetRMSOnMainAxis();
-	fSkewOnLine=SkewOnMainAxis();	
+  fPhiMainAxis=AngleLineMaxRMS();
+  BuildLineMaxRMS();
+  fRMSOnMainAxis=GetRMSOnMainAxis();
+  fSkewOnLine=SkewOnMainAxis();	
 }
 
 /**

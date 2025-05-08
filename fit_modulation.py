@@ -39,9 +39,15 @@ parser.add_argument("--energy", type=float, default=17.0, help="Energy value for
 parser.add_argument("--file", type=str, default="Analysis_reco_Pol_Fusion.root", help="Path to the ROOT file.")
 parser.add_argument("--draw", action="store_true", help="Flag to draw the histograms.",default=False)
 parser.add_argument("--run", help="append to ouput name",default=None)
+parser.add_argument("--out_folder", type=str, default="output/", help="Output folder for the plots.")
 args = parser.parse_args()
 
+line_purity=0.75
+line_purity_err=0.15
+
 name = f"{args.energy}keV photoelectron"
+
+ROOT.gROOT.SetBatch(True)
 
 file = uproot.open(args.file)
 # Access the TTree named "track_info"
@@ -106,7 +112,9 @@ latex.DrawLatex(0.15, 0.75, f"Expected Background Fraction: 25%")
 latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func_energy.GetChisquare()/fit_func_energy.GetNDF():.1f}")
 
 canvas.Update()
-if args.draw is True: canvas.SaveAs(f"Energy_{args.energy}.png")
+if args.draw is True: 
+    if args.run is None: canvas.SaveAs(f"Energy_{args.energy}.png")
+    else: canvas.SaveAs(f"{args.out_folder}/Energy_{args.energy}_run{args.run}.png")
 
 #! define histogram for directions
 histo=hist(directions,name,channels=200,write=False)
@@ -115,7 +123,12 @@ fit_func = ROOT.TF1("fit_func", "[0] + [1]*cos((x - [2])*3.14159/180)**2", -180,
 fit_func.SetParameters(250, 150, 90)
 histo.Fit(fit_func, "RQ")
 
-PolDegree=fit_func.GetParameter(1)/(2*fit_func.GetParameter(0)+fit_func.GetParameter(1))
+PolDegree=fit_func.GetParameter(1)/(2*fit_func.GetParameter(0)+fit_func.GetParameter(1))/line_purity
+PolDegree_err = PolDegree * np.sqrt(
+    (fit_func.GetParError(1) / fit_func.GetParameter(1))**2 +
+    (fit_func.GetParError(0) / fit_func.GetParameter(0))**2 +
+    (line_purity_err / line_purity)**2
+)
 
 # Draw the fit function on the histogram
 fit_func.Draw("same")
@@ -131,20 +144,22 @@ histo.GetYaxis().SetRangeUser(0, ymax*1.8)
 
 
 # Create TPaveText to display the modulation factor
-latex.DrawLatex(0.15, 0.85, f"Modulation Factor: {PolDegree/0.75:.3f}")
+latex.DrawLatex(0.15, 0.85, f"Modulation Factor: {PolDegree:.3f} +/- {PolDegree_err:.3f}")
 latex.DrawLatex(0.15, 0.8, f"Purity of the line: 75%")
 latex.DrawLatex(0.15, 0.75, "Fitting Function: [0] + [1]*cos^2((x - [2]))")
 if fit_func.GetNDF()!=0: latex.DrawLatex(0.15, 0.7, f"chi2/ndf: {fit_func.GetChisquare()/fit_func.GetNDF():.1f}")
-latex.DrawLatex(0.15, 0.65, f"Phase (deg): {fit_func.GetParameter(2):.1f}")
+latex.DrawLatex(0.15, 0.65, f"Phase (deg): {fit_func.GetParameter(2):.1f} +/- {fit_func.GetParError(2):.1f}")
 
 
 canvas1.Update()
 
-if args.draw is True: canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
+if args.draw is True: 
+    if args.run is None: canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
+    else: canvas1.SaveAs(f"{args.out_folder}/ModualtionCurve_{args.energy}_run{args.run}.png")
 
-if args.run is None: output_file = "output.txt"
-else: output_file = f"output_{args.run}.txt"
-modulation_factor = PolDegree / 0.75
+if args.run is None: output_file = f"{args.out_folder}/output.txt"
+else: output_file = f"{args.out_folder}/output_{args.run}.txt"
+modulation_factor = PolDegree
 if fit_func.GetNDF()!=0: reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
 else: reduced_chi2=0
 

@@ -61,7 +61,7 @@ public:
      * @param B Start index for the track hits.
      * @param E End index for the track hits.
      */
-    Analyzer(const char* nometh2,int* X,int* Y,float* Z, int B,int E);
+    Analyzer(const char* nometh2,int* X,int* Y,float* Z, int B,int E, bool useRebin);
 
     /**
      * Destructor.
