@@ -672,6 +672,13 @@ void Analyzer::SavePicDir(const char* nomepic){
   fTrack->Draw("COLZ");
   fBarPlot->Draw("SAMEP");
   fLineMaxRMS->Draw("SAME");
+  TLatex* statsText = new TLatex();
+  statsText->SetNDC();
+  statsText->SetTextSize(0.04);
+  double profileMean = 0, profileSkew = 0;
+  GetTrackProfileStats(profileMean, profileSkew);
+  statsText->DrawLatex(0.15, 0.85, Form("Profile Mean: %.2f", profileMean));
+  statsText->DrawLatex(0.15, 0.80, Form("Profile Skew: %.2f", profileSkew));
 
   canv->cd(2);
   fTrackTail->Draw("COLZ");

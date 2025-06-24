@@ -17,6 +17,7 @@ crosscheck.py
 firstTry/
 base_Fe
 INAF
+INAF_90
 *exposure*
 min_param.py
 condor*
@@ -27,3 +28,5 @@ run_*
 params*
 generate_combinations.py
 fit_modulation.py
+Old_Test
+INAF_MP

@@ -1,5 +1,11 @@
-//This in particular compile using  g++ Analyzer.cxx Base_script.cxx -o nameprog `root-config --libs --cflags` -lSpectrum
-//Then use as ./nameprog path_to_rootfile
+// To compile this program, use:
+//   g++ Analyzer.cxx INAF_dir.cxx -O3 -o INAF `root-config --libs --cflags` -lSpectrum
+//
+// To run the program, use:
+//   ./INAF <path_to_rootfile> <output_directory> <NPIP> <wfactor> <threshold> <remove_noise_value>
+//
+// Example:
+//   ./INAF_dir data.root ./output 10 1.0 20 30
 
 #include <iostream>
 #include <string>
@@ -25,22 +31,6 @@
 #include <filesystem>
 
 using namespace std;
-
-/*old
-void ScIndicesElem(int nSc,int* ScNelements, vector<int>& B, vector<int>& E){
-  B.clear();
-  E.clear();
-
-  int parcount=0;
-
-  for(int i=0;i<nSc;i++){
-    B.push_back(parcount);
-    E.push_back(parcount+ScNelements[i]);
-
-    parcount+=ScNelements[i];
-  }
-}
-*/
 
 // Function to calculate indices for clusters based on reduced pixels
 // nSc: number of superclusters
@@ -79,23 +69,6 @@ void ScIndicesElem(int nSc, UInt_t npix, float* sc_redpixID, int &nSc_red, vecto
   sc_redpix_start.clear(); // Clear the temporary storage
 }
 
-// Function to find the divisor of A closest to B
-int closest_divisor(int A, float B){
-  vector<float>  div_dist;
-  vector<int> div_candidate;
-
-  // Find all divisors of A and their distance to B
-  for(int i=1; i<=A; i++){
-    if(A%i==0){ // Check if i is a divisor of A
-      div_dist.push_back(abs((float)i-B));
-      div_candidate.push_back(i);
-    }
-  }
-
-  // Find the divisor closest to B
-  auto result = min_element(div_dist.begin(), div_dist.end());
-  return div_candidate[result-div_dist.begin()];
-}
 int main(int argc, char** argv){
   if (argc < 6) {
     std::cerr << "Usage: " << argv[0] << " <path_to_rootfile> <output_directory> <NPIP> <wfactor> <threshold> <remove_noise_value>" << std::endl;
@@ -107,7 +80,7 @@ int main(int argc, char** argv){
   int threshold = std::stoi(argv[5]);
   int remove_noise_value = std::stoi(argv[6]);
 
-// Open the input ROOT file and get the "Events" TTree
+  // Open the input ROOT file and get the "Events" TTree
   TFile* f = TFile::Open(Form("%s",argv[1]));
   TTree* tree = (TTree*)f->Get("Events");
 
@@ -123,7 +96,7 @@ int main(int argc, char** argv){
   UInt_t Nredpix=0;
   Int_t sc_npix=0;
   int run;
-  int event;
+  int event, event_out;
 
   // Reserve space for vectors to store pixel and cluster data
   vector<float> sc_redpixID;
@@ -166,23 +139,16 @@ int main(int argc, char** argv){
   vector<float> integral;
   integral.reserve(nscmax);
 
-// Prepare for the analysis by setting branch addresses for tree
+  // Prepare for the analysis by setting branch addresses for tree
   // This connects the variables defined above with the corresponding data in the ROOT file
   tree->SetBranchAddress("run",&run);
   tree->SetBranchAddress("event",&event);
   tree->SetBranchAddress("nSc",&nSc);
   tree->SetBranchAddress("sc_redpixIdx",sc_redpixID.data());
-  //tree->SetBranchAddress("sc_size",&sc_npix);
   tree->SetBranchAddress("nRedpix",&Nredpix);
   
-  
-  tree->SetBranchAddress("redpix_ix",YPix.data());
-  tree->SetBranchAddress("redpix_iy",XPix.data());
-  //tree->SetBranchAddress("redpix_ix",XPix.data());
-  //tree->SetBranchAddress("redpix_iy",YPix.data());
-
-
-
+  tree->SetBranchAddress("redpix_ix",XPix.data());
+  tree->SetBranchAddress("redpix_iy",YPix.data());
 
   tree->SetBranchAddress("redpix_iz",ZPix.data());
   tree->SetBranchAddress("sc_width",width.data());
@@ -219,8 +185,6 @@ int main(int argc, char** argv){
   bool puCandidate=false;
 
   //impact point and directionality
-  //Int_t NPIP=300;
-  //Float_t wFac=2.;
   double xIP=0, yIP=0;
 
   vector<std::pair<double,double>> peakslong;
@@ -232,7 +196,6 @@ int main(int argc, char** argv){
   //ANALYSIS
   int counter=0;
   int ired=0;
-  //int counterall=0;
 
   // Prepare output file path and open output file
   // Assuming 'argv[1]' is the input file and 'argv[2]' is the output directory
@@ -241,8 +204,6 @@ int main(int argc, char** argv){
   string filename = inputFilePath.substr(inputFilePath.find_last_of("/\\") + 1);
   string outputFilePath = outputDir + "/Analysis_" + filename;
 
-  //string filename(argv[1]);
-  //filename = filename.substr(filename.find_last_of("/\\")+1);
   cout<<filename<<endl;
   TFile* fout = new TFile(outputFilePath.c_str(), "recreate");
   cout<<Form("%s/Analysis_%s",argv[2],filename.c_str())<<endl;
@@ -251,7 +212,7 @@ int main(int argc, char** argv){
 
   TTree* out_tree = new TTree("track_info","track_info");
   out_tree->Branch("run",&run);
-  out_tree->Branch("event",&event);
+  out_tree->Branch("event",&event_out);
   out_tree->Branch("nSc",&nSc);
   out_tree->Branch("nSc_red",&nSc_red);
   out_tree->Branch("Integral",&scint);
@@ -276,39 +237,16 @@ int main(int argc, char** argv){
   out_tree->Branch("ProfileMean",&profileMean);
   out_tree->Branch("ProfileSkew",&profileSkew);
   out_tree->Branch("PileUpCandidate",&puCandidate);
-  /*
-  out_tree->Branch("Npeaks",&npeaks);
-  out_tree->Branch("PeakDensity",&peak_density);
-  out_tree->Branch("TrackLength",&tracklength);
-  out_tree->Branch("TrackWidth",&track_width);
-  out_tree->Branch("RecoLength",&recolength);
-  out_tree->Branch("RecoWidth",&recowidth);
-  out_tree->Branch("PeakDistance",&peak_distance);
-  out_tree->Branch("Skewness",&skewness_L);
-  out_tree->Branch("Kurtosis",&kurtosis_T);
-  out_tree->Branch("phi_HT_skew",&phi_HT_skew);
-  out_tree->Branch("phi_HT_maxpx",&phi_HT_maxpx);
-  out_tree->Branch("phi_HT_maxpxRebin",&phi_HT_maxpxRebin);
-  out_tree->Branch("phi_HT_peakprof",&phi_HT_peakprof);
-  out_tree->Branch("phi_HT_maxprof",&phi_HT_maxprof);
-  out_tree->Branch("phi_HT_integral",&phi_HT_integral);
-  */
 
   int pileUpCounter=0;
   cout<<"this run has "<<tree->GetEntries()<<" entries"<<endl;
   for(int k=0;k<tree->GetEntries();k++) //only for FUSION He/CF4 INAF Nov24
   //for(int k=100000;k<110000;k++) //only for FUSION He/CF4 INAF Nov24
-  //for(int k=0;k<10000;k++)
-  //for(int k=0;k<1000;k++)
   {
-    //cout<<"Entry "<<k<<endl;
     sc_redpixID.clear();
     tree->GetEntry(k);
-    //cout << "Nev: "<< k << "\nnSc:  " << nSc << " event "<< event <<endl;
     //for reduced pixels:
     ScIndicesElem(nSc,Nredpix,sc_redpixID.data(),nSc_red,BeginScPix,EndScPix);
-
-    //cout<<"nSc "<<nSc<<" nSc_red "<<nSc_red<<" Nredpix "<<Nredpix<<endl;
 
     //Start the cycle on the supercluster of the event
     int pixcounter =0;
@@ -327,11 +265,8 @@ int main(int argc, char** argv){
       y_max=ymax[i];
       reco_sc_rms=v_sc_rms[i];
       reco_sc_tgausssigma=v_sc_tgausssigma[i];
-      //cout<<"SC "<<i<<endl;
 
       pixcounter += EndScPix[i] - BeginScPix[i];
-      //cout<<"counted pix: "<<pixcounter<<endl;
-
       //! Condition to filter out certain events based on physical properties
       //For Polarized 8Kev photon in MANGO
       //if(scint>25000 && scint<50000 && recowidth/recolength>0.7 && recowidth/recolength<1 && x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && run>22700)
@@ -339,65 +274,61 @@ int main(int argc, char** argv){
       //For Polarized 17Kev photon in MANGO FUSION He/CF4
       //if( x_mean>900 && x_mean<1350 && y_mean<1350 && y_mean>900 && scint<90000 && scint>60000 && sc_npix<6000  && run>22700)
       //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4 0deg
-      if( x_mean>1800 && x_mean<2000 && y_mean<1150 && y_mean>950 && scint<39000 && scint>28000)
+      if( x_mean>1300 && x_mean<2500 && y_mean>400 && y_mean<1500 && scint<45000 && scint>25000)
       //For Polarized 17Kev photon in MANGO QUEST EHD Ar/CF4 90deg
-      //if( x_mean>1800 && x_mean<2000 && y_mean<1125 && y_mean>925 && scint<36000 && scint>26000)
+      //if( x_mean>1800 && x_mean<2000 && y_mean<1125 && y_mean>925 && scint<38000 && scint>24000)
       // For LIME 55Fe
       //if (y_max < 1250 && y_min > 1050 && x_max < 1250 && x_min > 1050 && scint>2000 && reco_sc_rms>5 && reco_sc_tgausssigma>2.63 && reco_sc_tgausssigma<4.5 && recowidth/recolength>0.6 )
       {
+        event_out = event; // Store the event number for output
         // Start timers for the entire track processing
-        auto t0 = std::chrono::high_resolution_clock::now();
-
-        // Analyzer constructor
-        Analyzer Traccia(Form("Track%i_event%i_run%i_entry%i", counter, k, run,k),
+        auto t0 = std::chrono::steady_clock::now();
+        //! Analyzer constructor 
+        Analyzer Traccia(Form("Track%i_event%i_run%i_entry%i", counter, event_out, run,k),
             XPix.data(), YPix.data(), ZPix.data(),
-            BeginScPix[i], EndScPix[i],true);
+            BeginScPix[i], EndScPix[i],false); // true for rebinning
 
         if (Traccia.Getbinmax()<=0) continue; //skip if the track is empty
 
-        auto t1 = std::chrono::high_resolution_clock::now();
-
+        auto t1 = std::chrono::steady_clock::now();
+        //! Set directionality parameters
         // (We skip timing SetWScal and SetNPIP now, or just ignore them in the printout)
         Traccia.SetWScal(wfactor);
         Traccia.SetNPIP(NPIP);
-
-        // ApplyThr
+        //! ApplyThr
         //Traccia.ApplyThr(10);// He/CF4 fusion
         Traccia.ApplyThr(threshold);
-        auto t4 = std::chrono::high_resolution_clock::now();
-
-        // RemoveNoise
+        auto t4 = std::chrono::steady_clock::now();
+        //! RemoveNoise
         //Traccia.RemoveNoise(30);// He/CF4 fusion
         Traccia.RemoveNoise(remove_noise_value);
-        auto t5 = std::chrono::high_resolution_clock::now();
-
-        // Check for pile-up (i.e., Traccia.PileUpCandidate())
-        auto t5_pileup_start = std::chrono::high_resolution_clock::now();
-        //puCandidate = Traccia.PileUpCandidate(false, counter, true, 0.2, 2.0); //for 17keV
-        puCandidate = Traccia.PileUpCandidate(false, counter, false, 0.,0.); //for 8keV
-        auto t5_pileup_end   = std::chrono::high_resolution_clock::now();
-
+        auto t5 = std::chrono::steady_clock::now();
+        //! Check for pile-up (i.e., Traccia.PileUpCandidate())
+        auto t5_pileup_start = std::chrono::steady_clock::now();
+        puCandidate = Traccia.PileUpCandidate(false, counter, true, 0., 0.); //for 17keV
+        //puCandidate = Traccia.PileUpCandidate(false, counter, false, 0.,0.); //for 8keV
+        if (puCandidate) {
+          pileUpCounter++;
+          //Traccia.TrackProfilePlotSave(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
+          continue;
+        }
+        auto t5_pileup_end   = std::chrono::steady_clock::now();
+        //! Get track profile statistics
         Traccia.GetTrackProfileStats(profileMean, profileSkew);
-
-        // ImpactPoint
+        //! ImpactPoint
         Traccia.ImpactPoint(Form("TrackIPRegion%i_run%i_evt%i", k, run, counter));
-        auto t6 = std::chrono::high_resolution_clock::now();
-
-        // ScaledTrack
+        auto t6 = std::chrono::steady_clock::now();
+        //! ScaledTrack
         Traccia.ScaledTrack(Form("TrackScaled%i_run%i_evt%i", k, run, counter));
-        auto t7 = std::chrono::high_resolution_clock::now();
-
-        // Direction
+        auto t7 = std::chrono::steady_clock::now();
+        //! Direction
         Traccia.Direction();
-        auto t8 = std::chrono::high_resolution_clock::now();
-
-        // ImprCorrectAngle (skipped in timing printout)
+        auto t8 = std::chrono::steady_clock::now();
+        //! ImprCorrectAngle (skipped in timing printout)
         Traccia.ImprCorrectAngle();
-
-        // BuildLineDirection
+        //! BuildLineDirection
         Traccia.BuildLineDirection();
-        auto t10 = std::chrono::high_resolution_clock::now();
-
+        auto t10 = std::chrono::steady_clock::now();
         // Grab results
         xIP         = Traccia.GetXIP();
         yIP         = Traccia.GetYIP();
@@ -406,30 +337,20 @@ int main(int argc, char** argv){
         phi_PCA     = Traccia.AngleLineMaxRMS();
         xbar        = Traccia.GetXbar();
         ybar        = Traccia.GetYbar();
-
         // End timing for the entire block
-        auto tEnd = std::chrono::high_resolution_clock::now();
-
-        if (puCandidate) {
-          pileUpCounter++;
-          //Traccia.TrackProfilePlotSave(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
-          continue;
-        }
+        auto tEnd = std::chrono::steady_clock::now();
 
         //! Print only every N events
-        if (k % 100 == 0)
+        if (k % 10000000 == 0)
         {
             // Save a diagnostic image
-            if (fabs(phi_DIR_deg) < 25. || fabs(phi_DIR_deg) > 150.){
-            Traccia.SavePicDir(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
-            }
-
+            Traccia.SavePicDir(Form("Track%i_event%i_run%i_entry%i.png", counter, event_out, run,k));
+            // Print the results to the console
             std::cout << "Processing entry " << k << " / " << tree->GetEntries() << std::endl;
             std::cout << "counter: " << counter << std::endl;
             std::cout << "XIP: " << xIP << "  YIP: " << yIP << std::endl;
             std::cout << "XIPPrev: " << Traccia.GetXIPPrev() << "  YIPPrev: " << Traccia.GetYIPPrev() << std::endl;
             std::cout << "Degree: " << phi_DIR_deg << "  tan(angle): " << std::tan(phi_DIR) << std::endl;
-
             // Compute durations in microseconds
             long long dt_ctor = std::chrono::duration_cast<std::chrono::microseconds>(t1 - t0).count();
             long long dt_applyThr = std::chrono::duration_cast<std::chrono::microseconds>(t4 - t1).count();
@@ -440,13 +361,11 @@ int main(int argc, char** argv){
             long long dt_direction   = std::chrono::duration_cast<std::chrono::microseconds>(t8 - t7).count();
             long long dt_buildLineDirection = std::chrono::duration_cast<std::chrono::microseconds>(t10 - t8).count();
             long long dt_total = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
-
             // Print each as "us" and as "% of total"
             auto printTime = [&](const char* label, long long dt) {
                 double pct = 100.0 * (double)dt / (double)dt_total;
                 std::cout << label << dt << " us (" << pct << " %)\n";
             };
-
             printTime("Time Analyzer ctor:         ", dt_ctor);
             printTime("Time ApplyThr:              ", dt_applyThr);
             printTime("Time RemoveNoise:           ", dt_removeNoise);
@@ -455,24 +374,24 @@ int main(int argc, char** argv){
             printTime("Time ScaledTrack:           ", dt_scaledTrack);
             printTime("Time Direction:             ", dt_direction);
             printTime("Time BuildLineDirection:    ", dt_buildLineDirection);
-
             // Lastly, the total is always 100%
             std::cout << "TOTAL time for all steps: " << dt_total << " us (100%)\n\n";
-        }
-
+          }
         // Fill the tree with the total time for this event
         procTime = std::chrono::duration_cast<std::chrono::microseconds>(tEnd - t0).count();
+        if (procTime < 0) {
+          std::cerr << "Warning: Negative processing time for event " << k << ", resetting to 0." << std::endl;
+          procTime = 0; // Reset to zero if negative
+          Traccia.SavePicDir(Form("Track%i_event%i_run%i_entry%i.png", counter, event, run,k));
+        }
         out_tree->Fill();
       }
     counter++;
-    }//superclusters
-
+    }//!superclusters
   sc_redpixID.resize(nSc);//Madonna fai il resize altriemnti lui si ricorda la dimensione precedente
-
-  }//ttree entries
+  }//!ttree entries
   out_tree->Write();
   fout->Close();
   cout<<"pile up percentage: "<<(double)pileUpCounter/(double)counter<<endl;
-
   return 0;
 }
