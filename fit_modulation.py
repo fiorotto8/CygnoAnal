@@ -173,6 +173,7 @@ parser.add_argument("--file", type=str, default="Analysis_reco_Pol_Fusion.root",
 parser.add_argument("--draw", action="store_true", help="Flag to draw the histograms.",default=False)
 parser.add_argument("--run", help="append to ouput name",default=None)
 parser.add_argument("--out_folder", type=str, default="output/", help="Output folder for the plots.")
+parser.add_argument("--pileup_cut", action="store_true", default=False, help="Enable the cut on pileup candidates.")
 args = parser.parse_args()
 
 # Create the output folder if it does not exist
@@ -196,13 +197,19 @@ pu_candidate = track_info_tree["PileUpCandidate"].array()
 
 xmeans = track_info_tree["Xmean"].array()
 ymeans = track_info_tree["Ymean"].array()
+xIP = track_info_tree["X_ImpactPoint"].array()
+yIP = track_info_tree["Y_ImpactPoint"].array()
 
 # Filter out entries where puCandidate == 1
-mask = pu_candidate != 1
-directions = directions[mask]
-energies = energies[mask]
-xmeans = xmeans[mask]
-ymeans = ymeans[mask]
+if args.pileup_cut:
+    mask = pu_candidate != 1
+    directions = directions[mask]
+    energies = energies[mask]
+    xmeans = xmeans[mask]
+    ymeans = ymeans[mask]
+    xIP = xIP[mask]
+    yIP = yIP[mask]
+
 
 #! Define histo for energy
 histoEnergy=hist(energies,name+" Energy spectrum",channels=200,write=False,)
@@ -376,23 +383,43 @@ with open(output_file, "a") as f:
     f.write(f"{modulation_factor:.3f};{reduced_chi2:.3f}\n")
 
 
-    # Fit Xmean and Ymean distributions using fit_gaus_plus_linear
-    fit_result_xmean = fit_gaus_plus_linear(
-        xmeans,
-        histo_name=f"{name} Xmean",
-        nbins=200,
-        draw=args.draw,
-        output_name=f"{args.out_folder}/Xmean_{args.energy}_run{args.run}.png" if args.run else f"Xmean_{args.energy}.png",
-        out_folder=args.out_folder,
-        run=args.run
-    )
+# Fit Xmean and Ymean distributions using fit_gaus_plus_linear
+fit_result_xmean = fit_gaus_plus_linear(
+    xmeans,
+    histo_name=f"{name} Xmean",
+    nbins=200,
+    draw=args.draw,
+    output_name=f"{args.out_folder}/Xmean_{args.energy}_run{args.run}.png" if args.run else f"Xmean_{args.energy}.png",
+    out_folder=args.out_folder,
+    run=args.run
+)
 
-    fit_result_ymean = fit_gaus_plus_linear(
-        ymeans,
-        histo_name=f"{name} Ymean",
-        nbins=200,
-        draw=args.draw,
-        output_name=f"{args.out_folder}/Ymean_{args.energy}_run{args.run}.png" if args.run else f"Ymean_{args.energy}.png",
-        out_folder=args.out_folder,
-        run=args.run
-    )
+fit_result_ymean = fit_gaus_plus_linear(
+    ymeans,
+    histo_name=f"{name} Ymean",
+    nbins=200,
+    draw=args.draw,
+    output_name=f"{args.out_folder}/Ymean_{args.energy}_run{args.run}.png" if args.run else f"Ymean_{args.energy}.png",
+    out_folder=args.out_folder,
+    run=args.run
+)
+
+fit_result_xip = fit_gaus_plus_linear(
+    xIP,
+    histo_name=f"{name} XIP",
+    nbins=200,
+    draw=args.draw,
+    output_name=f"{args.out_folder}/XIP_{args.energy}_run{args.run}.png" if args.run else f"XIP_{args.energy}.png",
+    out_folder=args.out_folder,
+    run=args.run
+)
+
+fit_result_yip = fit_gaus_plus_linear(
+    yIP,
+    histo_name=f"{name} YIP",
+    nbins=200,
+    draw=args.draw,
+    output_name=f"{args.out_folder}/YIP_{args.energy}_run{args.run}.png" if args.run else f"YIP_{args.energy}.png",
+    out_folder=args.out_folder,
+    run=args.run
+)

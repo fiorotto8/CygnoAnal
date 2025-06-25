@@ -1,4 +1,4 @@
-input_file=Reco/ArCF4_0deg.root
+input_file=Reco/ArCF4_90deg.root
 output_dir=.
 NPIP=250
 wfactor=4
@@ -7,11 +7,10 @@ remove_noise_value=10
 n_workers=16
 print_output=1000000000
 
-# Cuts for analysis (add as many as you want)
-x_mean_min=1200
-x_mean_max=2900
-y_mean_min=500
-y_mean_max=1500
-scint_min=25000
-scint_max=45000
-
+# Cuts for analysis Nov24 ArCF4_90deg
+x_mean_min=1800
+x_mean_max=2000
+y_mean_min=925
+y_mean_max=1125
+scint_min=24000
+scint_max=38000
