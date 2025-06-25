@@ -33,7 +33,7 @@ def grapherr(x,y,ex,ey,x_string, y_string,name=None, color=4, markerstyle=22, ma
     plot.SetMarkerSize(markersize)
     if write==True: plot.Write()
     return plot
-n_sigma = 2.326#99% of the Gaussian distribution is within 2.326 sigma from the mean
+n_sigma = 2
 
 def fit_gaus_plus_linear(
     data, 
@@ -318,6 +318,20 @@ PolDegree_err = PolDegree * np.sqrt(
     (fit_func.GetParError(0) / fit_func.GetParameter(0))**2 +
     (line_purity_err / line_purity)**2
 )
+
+#! crazy test
+""" # This is a test to fit the modulation curve with an additional pol1 background
+
+# Take the previous fit function and parameters, and fit again with an additional pol1 background
+fit_func = ROOT.TF1("fit_func", "[0] + [1]*cos((x - [2])*3.14159/180)**2 + pol1(3)", -180, 180)
+# Set initial parameters: previous fit + pol1 (set to 0,0)
+for i in range(3):
+    fit_func.SetParameter(i, fit_func.GetParameter(i))
+fit_func.SetParameter(3, 200)  # pol1 intercept
+fit_func.SetParameter(4, -100)  # pol1 slope
+histo.Fit(fit_func, "RQ")
+"""
+#!
 
 # Draw the fit function on the histogram
 fit_func.Draw("same")
