@@ -313,6 +313,8 @@ int main(int argc, char** argv) {
         bool puCandidate = false;
         // Impact point variables
         double xIP = 0, yIP = 0;
+        //stokes parameters (ik, qk, uk) not used in this worker logic
+        double ik = 0, qk = 0, uk = 0;
         // (peakslong, peakstrans, etc. are not explicitly used further in code)
         int npeaks = 0;
         double peak_density = 0, tracklength = 0, track_width = 0;
@@ -354,6 +356,9 @@ int main(int argc, char** argv) {
         out_tree->Branch("ProfileMean", &profileMean);
         out_tree->Branch("ProfileSkew", &profileSkew);
         out_tree->Branch("PileUpCandidate", &puCandidate);
+        out_tree->Branch("ik", &ik);
+        out_tree->Branch("qk", &qk);
+        out_tree->Branch("uk", &uk);
 
         // Determine this worker's event range [start, end)
         Long64_t startIndex = (workerId * totalEntries) / nWorkers;
@@ -453,7 +458,7 @@ int main(int argc, char** argv) {
                     // Improve angle and build line direction (not timed in output)
                     Traccia.ImprCorrectAngle();
                     Traccia.BuildLineDirection();
-                    auto t10 = std::chrono::high_resolution_clock::now();
+                    Traccia.BuildStokesParams();                    auto t10 = std::chrono::high_resolution_clock::now();
                     // Retrieve results from Analyzer
                     xIP         = Traccia.GetXIP();
                     yIP         = Traccia.GetYIP();
@@ -462,6 +467,9 @@ int main(int argc, char** argv) {
                     phi_PCA     = Traccia.AngleLineMaxRMS();
                     xbar        = Traccia.GetXbar();
                     ybar        = Traccia.GetYbar();
+                    ik          = Traccia.GetIk();
+                    qk          = Traccia.GetQk();
+                    uk          = Traccia.GetUk();
                     // End timing for this track
                     auto tEnd = std::chrono::high_resolution_clock::now();
                     // Print progress for a single random worker only (e.g., worker 0)

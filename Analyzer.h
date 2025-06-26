@@ -95,6 +95,9 @@ public:
     inline double GetYIPPrev() const {return fYIPPrev;}
     inline double GetDir() const {return fPhiDir;}
     inline double PDistCm(double X, double Y) const {return sqrt( ( (X-fXbar)*(X-fXbar) + (Y-fYbar)*(Y-fYbar) ));}
+    inline double GetIk() const { return ik; }
+    inline double GetQk() const { return qk; }
+    inline double GetUk() const { return uk; }
 
     //Setters for directionality
     inline void SetWScal(float a) {fwScal=a;}
@@ -126,6 +129,7 @@ public:
 
     void Direction();
     void ImprCorrectAngle();
+    void BuildStokesParams();
 
     void Edges(double &Xl, double &Yl, double &Xr, double &Yr, double slope);
     TH1D* FillProfile(bool longitudinal, float x1=0, float x2=2304);
@@ -182,6 +186,10 @@ private:
     TF1* fLineDirection;
 
     double fRange;
+
+    double ik;
+    double qk;
+    double uk;
 };
 
 #endif // ANALYZER_H

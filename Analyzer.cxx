@@ -338,7 +338,10 @@ fXIP(0.),
 fYIP(0.),
 fIPPlot(nullptr),
 fPhiDir(0.),
-fLineDirection(nullptr)
+fLineDirection(nullptr),
+ik(0.),
+qk(0.),
+uk(0.)
 {
   fintegral=0.;
 
@@ -1205,6 +1208,25 @@ void Analyzer::Direction()
   }
 
 }
+
+/**
+ * @brief Computes the Stokes parameters for the current track.
+ *
+ * This function calculates the Stokes parameters (ik, qk, uk) based on the
+ * direction angle (fPhiDir) of the track. The parameters are set as follows:
+ * - ik: Set to 1.
+ * - qk: Computed as 2 * cos(2 * fPhiDir).
+ * - uk: Computed as 2 * sin(2 * fPhiDir).
+ *
+ * These parameters are used to describe the polarization state of the track.
+ */
+void Analyzer::BuildStokesParams(){
+
+  // Compute the Stokes parameters based on the track's properties
+  ik=1;
+  qk=2*cos(2*fPhiDir);
+  uk=2*sin(2*fPhiDir);
+} 
 
 /**
  * Corrects the track's direction angle to ensure consistency in the representation.
