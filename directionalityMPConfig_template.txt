@@ -8,9 +8,9 @@ n_workers=16
 print_output=1000000000
 
 # Cuts for analysis
-x_mean_min=1700
-x_mean_max=2000
+x_mean_min=1950
+x_mean_max=1975
 y_mean_min=950
-y_mean_max=1150
+y_mean_max=975
 scint_min=28500
 scint_max=39500

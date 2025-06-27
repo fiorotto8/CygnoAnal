@@ -7,6 +7,7 @@ This repository provides an `Analyzer` class and related scripts for directional
 - **Core Implementation:**  
   - `Analyzer.cxx` (main class implementation)  
   - `Analyzer.h` (class header)
+  - `TrackPlotter.cpp` (simple utility for plotting tracks)
 
 - **Example Scripts:**  
   - `Base_script.cxx`: Basic usage example, suitable for getting started with the analysis workflow.
@@ -47,6 +48,8 @@ g++ Analyzer.cxx Base_script.cxx -O3 -o nameprog `root-config --libs --cflags` -
 
 - `fit_modulation.py`: Script for analyzing results from polarized source measurements.  
   - Fits modulation curves and extracts polarization parameters.
+- `Par_Scan.sh` and `AnalParamScan.sh`: Script for scanning parameter space in polarimetry analysis, generating plots and grouped results. IMPORTANT you should set the `BASEDIR` as the output directory for the parameter scan.
+  - `scannedResults.py`: Aggregates results from multiple runs and generates plots.
 
 ## Analysis Notes & Parameters
 
@@ -56,9 +59,6 @@ g++ Analyzer.cxx Base_script.cxx -O3 -o nameprog `root-config --libs --cflags` -
   - `RemoveNoise(30)`: Remove noise below 30 ADC counts.
   - `NPIP = 250`: Set number of primary ionization points.
   - `wFac = 2.0`: Weighting factor for diffusion.
-  - For 17 keV events:  
-    `PileUpCandidate(false, counter, true, 0.2, 2.0)`  
-    (Disables pile-up, enables candidate search with specified thresholds.)
 
 ## Additional Features
 

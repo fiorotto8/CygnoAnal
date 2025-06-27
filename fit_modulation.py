@@ -367,20 +367,20 @@ if args.draw is True:
     if args.run is None: canvas1.SaveAs(f"ModualtionCurve_{args.energy}.png")
     else: canvas1.SaveAs(f"{args.out_folder}/ModualtionCurve_{args.energy}_run{args.run}.png")
 
-if args.run is None: output_file = f"{args.out_folder}/output.txt"
-else: output_file = f"{args.out_folder}/output_{args.run}.txt"
-modulation_factor = PolDegree
-if fit_func.GetNDF()!=0: reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
-else: reduced_chi2=0
-
-# Check if the file exists, if not create it
-if not os.path.exists(output_file):
+if args.run is None:
+    output_file = None
+else:
+    output_file = f"{args.out_folder}/output_{args.run}.txt"
+    if os.path.exists(output_file):
+        os.remove(output_file)
+    # Create the file so it exists for later appending
     with open(output_file, "w") as f:
         pass
 
-# Append the modulation factor and reduced chi2 to the file
-with open(output_file, "a") as f:
-    f.write(f"{modulation_factor:.3f};{reduced_chi2:.3f}\n")
+
+modulation_factor = PolDegree
+if fit_func.GetNDF()!=0: reduced_chi2 = fit_func.GetChisquare() / fit_func.GetNDF()
+else: reduced_chi2=0
 
 # Fit Xmean and Ymean distributions using fit_gaus_plus_linear
 fit_result_xmean = fit_gaus_plus_linear(
@@ -438,17 +438,39 @@ I=sum(iks)
 err_q=np.sqrt((1/(I-1))*( (2/mu**2)-q**2 )  )
 err_u=np.sqrt((1/(I-1))*( (2/mu**2)-u**2 )  )
 
-Pol_deg=(1/mu)*(q**2 + u**2)**0.5
-Pol_deg_err = Pol_deg * np.sqrt(
+Pol_deg_stokes=(1/mu)*(q**2 + u**2)**0.5
+Pol_deg_stokes_err = Pol_deg_stokes * np.sqrt(
     (err_q / q)**2 +
     (err_u / u)**2
 )
-Pol_angle = 0.5 * np.arctan2(u, q) * 180 / np.pi
-Pol_angle_err = 0.5 * np.sqrt(
+Pol_angle_stokes = 0.5 * np.arctan2(u, q) * 180 / np.pi
+Pol_angle_stokes_err = 0.5 * np.sqrt(
     (err_u / u)**2 +
     (err_q / q)**2
 ) * 180 / np.pi
 
 # Print the results
-print(f"Modulation factor from Stokes parameters: {Pol_deg:.3f} +/- {Pol_deg_err:.3f}")
-print(f"Polarization angle: {Pol_angle:.3f} +/- {Pol_angle_err:.3f} degrees")   
+print(f"Modulation factor from Stokes parameters: {Pol_deg_stokes:.3f} +/- {Pol_deg_stokes_err:.3f}")
+print(f"Polarization angle: {Pol_angle_stokes:.3f} +/- {Pol_angle_stokes_err:.3f} degrees")   
+
+
+if output_file is not None:
+    # Check if the file exists, if not create it
+    if not os.path.exists(output_file):
+        with open(output_file, "w") as f:
+            # Write header
+            f.write("modulation_factor_curve,error_curve,chi2_curve,modulation_factor_stokes,error_stokes,polarization_angle,polarization_angle_err,other_params\n")
+
+    # Append the results to the file
+    with open(output_file, "a") as f:
+        f.write(
+            f"{args.run},"
+            f"{PolDegree:.3f},"
+            f"{PolDegree_err:.3f},"
+            f"{reduced_chi2:.3f},"
+            f"{Pol_deg_stokes:.3f},"
+            f"{Pol_deg_stokes_err:.3f},"
+            f"{Pol_angle_stokes:.3f},"
+            f"{Pol_angle_stokes_err:.3f},"
+            f"\n"
+        )

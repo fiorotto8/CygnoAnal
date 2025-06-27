@@ -1,5 +1,4 @@
-// g++ Analyzer.cxx INAF_dir_MP.cxx -O3 -std=c++17 -o INAF_MP `root-config --libs --cflags` -lSpectrum -lstdc++fs
-#include <map>
+//g++ Analyzer.cxx INAF_dir_MP.cxx -O3 -o INAF_MP `root-config --libs --cflags` -lSpectrum#include <map>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -599,5 +598,63 @@ int main(int argc, char** argv) {
     }
     double pileUpRatio = (totalProcessedTracks > 0 ? (double)totalPileUpTracks / (double)totalProcessedTracks : 0.0);
     std::cout << "pile up percentage: " << pileUpRatio << std::endl;
+
+    // Write config parameters as individual branches (one entry) in a new TTree in the output file
+    TFile *fout = TFile::Open(finalOutputPath.c_str(), "UPDATE");
+    if (fout && !fout->IsZombie()) {
+        TTree *config_tree = new TTree("config", "Configuration parameters used for this analysis");
+        // Store config values with correct types
+        std::map<std::string, int>    int_vars;
+        std::map<std::string, double> double_vars;
+        std::map<std::string, std::string> string_vars;
+        std::map<std::string, void*> branch_ptrs;
+        std::vector<std::string> branch_types;
+        for (const auto& kv : config) {
+            // Try to parse as int
+            try {
+                size_t idx;
+                int val = std::stoi(kv.second, &idx);
+                if (idx == kv.second.size()) {
+                    int_vars[kv.first] = val;
+                    branch_ptrs[kv.first] = &int_vars[kv.first];
+                    branch_types.push_back("I");
+                    continue;
+                }
+            } catch (...) {}
+            // Try to parse as double
+            try {
+                size_t idx;
+                double val = std::stod(kv.second, &idx);
+                if (idx == kv.second.size()) {
+                    double_vars[kv.first] = val;
+                    branch_ptrs[kv.first] = &double_vars[kv.first];
+                    branch_types.push_back("D");
+                    continue;
+                }
+            } catch (...) {}
+            // Otherwise, treat as string
+            string_vars[kv.first] = kv.second;
+            branch_ptrs[kv.first] = (void*)string_vars[kv.first].c_str();
+            branch_types.push_back("C");
+        }
+        // Create branches
+        size_t idx = 0;
+        for (const auto& kv : config) {
+            const std::string& name = kv.first;
+            const std::string& type = branch_types[idx++];
+            if (type == "I") {
+                config_tree->Branch(name.c_str(), (int*)branch_ptrs[name], (name + "/I").c_str());
+            } else if (type == "D") {
+                config_tree->Branch(name.c_str(), (double*)branch_ptrs[name], (name + "/D").c_str());
+            } else {
+                config_tree->Branch(name.c_str(), (char*)branch_ptrs[name], (name + "/C").c_str());
+            }
+        }
+        // Fill the tree with one entry
+        config_tree->Fill();
+        config_tree->Write();
+        fout->Close();
+    }
+
     return 0;
 }
