@@ -382,7 +382,6 @@ if not os.path.exists(output_file):
 with open(output_file, "a") as f:
     f.write(f"{modulation_factor:.3f};{reduced_chi2:.3f}\n")
 
-
 # Fit Xmean and Ymean distributions using fit_gaus_plus_linear
 fit_result_xmean = fit_gaus_plus_linear(
     xmeans,
@@ -423,3 +422,33 @@ fit_result_yip = fit_gaus_plus_linear(
     out_folder=args.out_folder,
     run=args.run
 )
+
+#! Using stokes parameters to create a graph with error bars
+
+
+#compute modulation with stokes parameters
+iks = track_info_tree["ik"].array()
+qks = track_info_tree["qk"].array()
+uks = track_info_tree["uk"].array()
+
+mu=1#to measure the modulation factor we need to put mu=1
+q=np.mean(qks)/mu
+u=np.mean(uks)/mu
+I=sum(iks)
+err_q=np.sqrt((1/(I-1))*( (2/mu**2)-q**2 )  )
+err_u=np.sqrt((1/(I-1))*( (2/mu**2)-u**2 )  )
+
+Pol_deg=(1/mu)*(q**2 + u**2)**0.5
+Pol_deg_err = Pol_deg * np.sqrt(
+    (err_q / q)**2 +
+    (err_u / u)**2
+)
+Pol_angle = 0.5 * np.arctan2(u, q) * 180 / np.pi
+Pol_angle_err = 0.5 * np.sqrt(
+    (err_u / u)**2 +
+    (err_q / q)**2
+) * 180 / np.pi
+
+# Print the results
+print(f"Modulation factor from Stokes parameters: {Pol_deg:.3f} +/- {Pol_deg_err:.3f}")
+print(f"Polarization angle: {Pol_angle:.3f} +/- {Pol_angle_err:.3f} degrees")   
