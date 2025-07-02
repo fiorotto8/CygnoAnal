@@ -438,11 +438,13 @@ I=sum(iks)
 err_q=np.sqrt((1/(I-1))*( (2/mu**2)-q**2 )  )
 err_u=np.sqrt((1/(I-1))*( (2/mu**2)-u**2 )  )
 
-Pol_deg_stokes=(1/mu)*(q**2 + u**2)**0.5
+Pol_deg_stokes=(1/(mu*line_purity))*(q**2 + u**2)**0.5
 Pol_deg_stokes_err = Pol_deg_stokes * np.sqrt(
     (err_q / q)**2 +
-    (err_u / u)**2
+    (err_u / u)**2 +
+    (line_purity_err / line_purity)**2
 )
+
 Pol_angle_stokes = 0.5 * np.arctan2(u, q) * 180 / np.pi
 Pol_angle_stokes_err = 0.5 * np.sqrt(
     (err_u / u)**2 +

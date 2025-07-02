@@ -1,16 +1,16 @@
-input_file=Reco/FirstReco_Nov24_highPileup/ArCF4_0deg.root
+input_file=Reco/INAF_Ar_2ndreco.root
 output_dir=.
 NPIP=250
 wfactor=4
 threshold=3
 remove_noise_value=10
 n_workers=16
-print_output=1000000000
+print_output=100000000
 
 # Cuts for analysis
-x_mean_min=1950
-x_mean_max=1975
-y_mean_min=950
-y_mean_max=975
-scint_min=28500
-scint_max=39500
+x_mean_min=1750
+x_mean_max=2000
+y_mean_min=975
+y_mean_max=1125
+scint_min=25000
+scint_max=38000

@@ -6,16 +6,17 @@ wfactor_start=1; wfactor_stop=5; wfactor_step=1
 threshold_start=1; threshold_stop=10; threshold_step=1
 remove_noise_start=0; remove_noise_stop=30; remove_noise_step=5
 
-# Generate ranges automatically
-NPIP_values=($(seq $NPIP_start $NPIP_step $NPIP_stop))
-wfactor_values=($(seq $wfactor_start $wfactor_step $wfactor_stop))
-threshold_values=($(seq $threshold_start $threshold_step $threshold_stop))
-remove_noise_values=($(seq $remove_noise_start $remove_noise_step $remove_noise_stop))
+# Generate ranges automatically and shuffle the values
+NPIP_values=($(seq $NPIP_start $NPIP_step $NPIP_stop | shuf))
+wfactor_values=($(seq $wfactor_start $wfactor_step $wfactor_stop | shuf))
+threshold_values=($(seq $threshold_start $threshold_step $threshold_stop | shuf))
+remove_noise_values=($(seq $remove_noise_start $remove_noise_step $remove_noise_stop | shuf))
 
 # Path to the base (template) config file
 BASE_CONFIG="directionalityMPConfig_template.txt"
 BASEDIR="ParamsScan"
 
+rm -rf "$BASEDIR"
 # Ensure config and output base directories exist
 mkdir -p "$BASEDIR/configFiles"
 

@@ -1,4 +1,5 @@
-//g++ Analyzer.cxx INAF_dir_MP.cxx -O3 -o INAF_MP `root-config --libs --cflags` -lSpectrum#include <map>
+//g++ Analyzer.cxx INAF_dir_MP.cxx -O3 -o INAF_MP `root-config --libs --cflags` -lSpectrum
+#include <map>
 #include <fstream>
 #include <iostream>
 #include <string>

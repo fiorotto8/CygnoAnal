@@ -3,6 +3,7 @@
 # Path to directory with all outputs
 BASEDIR="ParamsScan"
 GLOBAL_OUTPUT="$BASEDIR/global_output.csv"
+FILENAME="INAF_Ar_2ndreco.root" #name of original file
 
 # Reset global output file and write CSV header
 echo "run,modulation_factor_curve,error_curve,chi2_curve,modulation_factor_stokes,error_stokes,polarization_angle,polarization_angle_err,NPIP,w_facto,threshold,remove_noise_value" > "$GLOBAL_OUTPUT"
@@ -14,7 +15,7 @@ for output_dir in "$BASEDIR"/output_*; do
     echo "Analyzing $output_dir (run $run_num)"
 
     # Run the fit_modulation.py script, specify run number and output folder
-    python3 fit_modulation.py --file "$output_dir/AnalysisMP_ArCF4_0deg.root" --out_folder "$output_dir" --run "$run_num" --draw
+    python3 fit_modulation.py --file "$output_dir/AnalysisMP_$FILENAME" --out_folder "$output_dir" --run "$run_num" --draw
 
     summary_file="$output_dir/output_${run_num}.txt"
     config_file="$BASEDIR/configFiles/config_${run_num}.txt"
