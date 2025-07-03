@@ -180,7 +180,7 @@ args = parser.parse_args()
 if not os.path.exists(args.out_folder):
     os.makedirs(args.out_folder)
 
-line_purity=0.75
+line_purity=0.85
 line_purity_err=0.15
 
 name = f"{args.energy}keV photoelectron"

@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define start, stop, and step for each parameter
-NPIP_start=50; NPIP_stop=500; NPIP_step=50
-wfactor_start=1; wfactor_stop=5; wfactor_step=1
+NPIP_start=50; NPIP_stop=1000; NPIP_step=50
+wfactor_start=1; wfactor_stop=10; wfactor_step=1
 threshold_start=1; threshold_stop=10; threshold_step=1
 remove_noise_start=0; remove_noise_stop=30; remove_noise_step=5
 
