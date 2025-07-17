@@ -1,9 +1,15 @@
 import pandas as pd
 import ROOT
 from array import array
+import argparse
 
-BASEDIR="ParamsScan"
-GLOBAL_OUTPUT=BASEDIR+"/global_output.csv"
+parser = argparse.ArgumentParser(description="Convert CSV to ROOT TTree.")
+parser.add_argument("--basedir", default="ParamsScan", help="Base directory containing the CSV file")
+parser.add_argument("--csv", default="global_output.csv", help="Path to the global output CSV file")
+args = parser.parse_args()
+
+BASEDIR = args.basedir
+GLOBAL_OUTPUT = BASEDIR + "/" + args.csv
 df = pd.read_csv(GLOBAL_OUTPUT, header=0)
 df = df.sort_values(by="run")
 #print(df)
