@@ -431,9 +431,13 @@ int main(int argc, char** argv) {
                     Traccia.SetWScal((float)wfactor);
                     Traccia.SetNPIP(NPIP);
                     // Apply threshold and remove noise
-                    Traccia.ApplyThr((double)threshold);
+                    if (threshold != 0) {
+                        Traccia.ApplyThr((double)threshold);
+                    }
                     auto t4 = std::chrono::high_resolution_clock::now();
-                    Traccia.RemoveNoise((double)remove_noise_value);
+                    if (remove_noise_value != 0) {
+                        Traccia.RemoveNoise((double)remove_noise_value);
+                    }
                     auto t5 = std::chrono::high_resolution_clock::now();
                     // Check for pile-up candidate:contentReference[oaicite:5]{index=5}
                     auto t5_pileup_start = std::chrono::high_resolution_clock::now();
